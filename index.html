@@ -174,18 +174,22 @@
         .program-display {
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
             position: relative;
         }
 
-        .program-display video {
+        #videoPlayer {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            z-index: 1;
+            background: #000;
+        }
+
+        #videoPlayer.hidden {
+            display: none;
         }
 
         .program-card {
@@ -197,8 +201,16 @@
             align-items: center;
             padding: 40px;
             text-align: center;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            color: #fff;
             overflow: hidden;
+        }
+
+        .program-card.hidden {
+            display: none;
         }
 
         .program-card .bg-animation {
@@ -513,6 +525,7 @@
                 <div class="screen flicker">
                     <!-- Program Content -->
                     <div class="program-display" id="programDisplay">
+                        <video id="videoPlayer" muted playsinline></video>
                         <div class="program-card" id="programCard">
                             <canvas class="bg-animation" id="bgCanvas"></canvas>
                             <div class="content">
@@ -577,65 +590,67 @@
     // RetroTV Simulator - Core Engine
     // ========================================
 
+    const VIDEO_BASE = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/';
+
     // === Program Templates (must be defined before CHANNELS) ===
     const PROGRAM_TEMPLATES = {
         cctv1: [
-            { name: '新闻联播', duration: 30, type: 'program', genre: 'news' },
-            { name: '焦点访谈', duration: 30, type: 'program', genre: 'news' },
-            { name: '天气预报', duration: 10, type: 'program', genre: 'weather' },
-            { name: '今日说法', duration: 30, type: 'program', genre: 'law' },
-            { name: '动物世界', duration: 45, type: 'program', genre: 'nature' },
-            { name: '综合剧场', duration: 45, type: 'program', genre: 'drama' },
-            { name: '晚间新闻', duration: 30, type: 'program', genre: 'news' },
-            { name: '人与自然', duration: 30, type: 'program', genre: 'nature' },
-            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
-            { name: '纪录片时间', duration: 50, type: 'program', genre: 'documentary' },
-            { name: '经典老片', duration: 60, type: 'program', genre: 'movie' },
+            { name: '新闻联播', duration: 30, type: 'program', genre: 'news', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
+            { name: '焦点访谈', duration: 30, type: 'program', genre: 'news', videoUrl: VIDEO_BASE + 'ForBiggerEscapes.mp4' },
+            { name: '天气预报', duration: 10, type: 'program', genre: 'weather', videoUrl: VIDEO_BASE + 'ForBiggerFun.mp4' },
+            { name: '今日说法', duration: 30, type: 'program', genre: 'law', videoUrl: VIDEO_BASE + 'ForBiggerJoyrides.mp4' },
+            { name: '动物世界', duration: 45, type: 'program', genre: 'nature', videoUrl: VIDEO_BASE + 'BigBuckBunny.mp4' },
+            { name: '综合剧场', duration: 45, type: 'program', genre: 'drama', videoUrl: VIDEO_BASE + 'Sintel.mp4' },
+            { name: '晚间新闻', duration: 30, type: 'program', genre: 'news', videoUrl: VIDEO_BASE + 'ForBiggerMeltdowns.mp4' },
+            { name: '人与自然', duration: 30, type: 'program', genre: 'nature', videoUrl: VIDEO_BASE + 'ElephantsDream.mp4' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
+            { name: '纪录片时间', duration: 50, type: 'program', genre: 'documentary', videoUrl: VIDEO_BASE + 'TearsOfSteel.mp4' },
+            { name: '经典老片', duration: 60, type: 'program', genre: 'movie', videoUrl: VIDEO_BASE + 'ElephantsDream.mp4' },
         ],
         cctv3: [
-            { name: '星光大道', duration: 60, type: 'program', genre: 'variety' },
-            { name: '非常6+1', duration: 45, type: 'program', genre: 'variety' },
-            { name: '开心辞典', duration: 40, type: 'program', genre: 'game' },
-            { name: '曲苑杂坛', duration: 30, type: 'program', genre: 'comedy' },
-            { name: '综艺大观', duration: 50, type: 'program', genre: 'variety' },
-            { name: '幸运52', duration: 45, type: 'program', genre: 'game' },
-            { name: '同一首歌', duration: 60, type: 'program', genre: 'music' },
-            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
-            { name: '欢乐中国行', duration: 50, type: 'program', genre: 'variety' },
-            { name: '音乐风云榜', duration: 30, type: 'program', genre: 'music' },
+            { name: '星光大道', duration: 60, type: 'program', genre: 'variety', videoUrl: VIDEO_BASE + 'BigBuckBunny.mp4' },
+            { name: '非常6+1', duration: 45, type: 'program', genre: 'variety', videoUrl: VIDEO_BASE + 'ForBiggerFun.mp4' },
+            { name: '开心辞典', duration: 40, type: 'program', genre: 'game', videoUrl: VIDEO_BASE + 'ForBiggerJoyrides.mp4' },
+            { name: '曲苑杂坛', duration: 30, type: 'program', genre: 'comedy', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
+            { name: '综艺大观', duration: 50, type: 'program', genre: 'variety', videoUrl: VIDEO_BASE + 'Sintel.mp4' },
+            { name: '幸运52', duration: 45, type: 'program', genre: 'game', videoUrl: VIDEO_BASE + 'ForBiggerEscapes.mp4' },
+            { name: '同一首歌', duration: 60, type: 'program', genre: 'music', videoUrl: VIDEO_BASE + 'TearsOfSteel.mp4' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad', videoUrl: VIDEO_BASE + 'ForBiggerMeltdowns.mp4' },
+            { name: '欢乐中国行', duration: 50, type: 'program', genre: 'variety', videoUrl: VIDEO_BASE + 'ElephantsDream.mp4' },
+            { name: '音乐风云榜', duration: 30, type: 'program', genre: 'music', videoUrl: VIDEO_BASE + 'ForBiggerFun.mp4' },
         ],
         cctv6: [
-            { name: '佳片有约', duration: 90, type: 'program', genre: 'movie' },
-            { name: '中国电影报道', duration: 20, type: 'program', genre: 'news' },
-            { name: '经典回顾', duration: 90, type: 'program', genre: 'movie' },
-            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
-            { name: '动作片场', duration: 90, type: 'program', genre: 'movie' },
-            { name: '爱情故事', duration: 90, type: 'program', genre: 'movie' },
-            { name: '光影星播客', duration: 20, type: 'program', genre: 'talk' },
-            { name: '午夜电影', duration: 90, type: 'program', genre: 'movie' },
+            { name: '佳片有约', duration: 90, type: 'program', genre: 'movie', videoUrl: VIDEO_BASE + 'Sintel.mp4' },
+            { name: '中国电影报道', duration: 20, type: 'program', genre: 'news', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
+            { name: '经典回顾', duration: 90, type: 'program', genre: 'movie', videoUrl: VIDEO_BASE + 'ElephantsDream.mp4' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad', videoUrl: VIDEO_BASE + 'ForBiggerJoyrides.mp4' },
+            { name: '动作片场', duration: 90, type: 'program', genre: 'movie', videoUrl: VIDEO_BASE + 'TearsOfSteel.mp4' },
+            { name: '爱情故事', duration: 90, type: 'program', genre: 'movie', videoUrl: VIDEO_BASE + 'BigBuckBunny.mp4' },
+            { name: '光影星播客', duration: 20, type: 'program', genre: 'talk', videoUrl: VIDEO_BASE + 'ForBiggerEscapes.mp4' },
+            { name: '午夜电影', duration: 90, type: 'program', genre: 'movie', videoUrl: VIDEO_BASE + 'Sintel.mp4' },
         ],
         cctv5: [
-            { name: '体育新闻', duration: 30, type: 'program', genre: 'news' },
-            { name: '天下足球', duration: 60, type: 'program', genre: 'sports' },
-            { name: 'NBA精彩赛事', duration: 90, type: 'program', genre: 'sports' },
-            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
-            { name: '乒乓球赛', duration: 60, type: 'program', genre: 'sports' },
-            { name: '武林风', duration: 45, type: 'program', genre: 'sports' },
-            { name: '体育世界', duration: 30, type: 'program', genre: 'sports' },
-            { name: '赛事集锦', duration: 45, type: 'program', genre: 'sports' },
-            { name: '健身动起来', duration: 20, type: 'program', genre: 'fitness' },
+            { name: '体育新闻', duration: 30, type: 'program', genre: 'news', videoUrl: VIDEO_BASE + 'ForBiggerMeltdowns.mp4' },
+            { name: '天下足球', duration: 60, type: 'program', genre: 'sports', videoUrl: VIDEO_BASE + 'SubaruOutbackOnStreetAndDirt.mp4' },
+            { name: 'NBA精彩赛事', duration: 90, type: 'program', genre: 'sports', videoUrl: VIDEO_BASE + 'BigBuckBunny.mp4' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
+            { name: '乒乓球赛', duration: 60, type: 'program', genre: 'sports', videoUrl: VIDEO_BASE + 'ForBiggerFun.mp4' },
+            { name: '武林风', duration: 45, type: 'program', genre: 'sports', videoUrl: VIDEO_BASE + 'ForBiggerJoyrides.mp4' },
+            { name: '体育世界', duration: 30, type: 'program', genre: 'sports', videoUrl: VIDEO_BASE + 'ForBiggerEscapes.mp4' },
+            { name: '赛事集锦', duration: 45, type: 'program', genre: 'sports', videoUrl: VIDEO_BASE + 'TearsOfSteel.mp4' },
+            { name: '健身动起来', duration: 20, type: 'program', genre: 'fitness', videoUrl: VIDEO_BASE + 'ForBiggerMeltdowns.mp4' },
         ],
         local: [
-            { name: '本地新闻', duration: 30, type: 'program', genre: 'news' },
-            { name: '家有妙招', duration: 30, type: 'program', genre: 'lifestyle' },
-            { name: '电视剧连播', duration: 45, type: 'program', genre: 'drama' },
-            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
-            { name: '生活帮', duration: 30, type: 'program', genre: 'lifestyle' },
-            { name: '方言剧场', duration: 40, type: 'program', genre: 'drama' },
-            { name: '美食天下', duration: 25, type: 'program', genre: 'food' },
-            { name: '晚间剧场', duration: 45, type: 'program', genre: 'drama' },
-            { name: '夜市人生', duration: 40, type: 'program', genre: 'drama' },
-            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+            { name: '本地新闻', duration: 30, type: 'program', genre: 'news', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
+            { name: '家有妙招', duration: 30, type: 'program', genre: 'lifestyle', videoUrl: VIDEO_BASE + 'ForBiggerFun.mp4' },
+            { name: '电视剧连播', duration: 45, type: 'program', genre: 'drama', videoUrl: VIDEO_BASE + 'Sintel.mp4' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad', videoUrl: VIDEO_BASE + 'ForBiggerJoyrides.mp4' },
+            { name: '生活帮', duration: 30, type: 'program', genre: 'lifestyle', videoUrl: VIDEO_BASE + 'ForBiggerEscapes.mp4' },
+            { name: '方言剧场', duration: 40, type: 'program', genre: 'drama', videoUrl: VIDEO_BASE + 'ElephantsDream.mp4' },
+            { name: '美食天下', duration: 25, type: 'program', genre: 'food', videoUrl: VIDEO_BASE + 'ForBiggerMeltdowns.mp4' },
+            { name: '晚间剧场', duration: 45, type: 'program', genre: 'drama', videoUrl: VIDEO_BASE + 'BigBuckBunny.mp4' },
+            { name: '夜市人生', duration: 40, type: 'program', genre: 'drama', videoUrl: VIDEO_BASE + 'TearsOfSteel.mp4' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad', videoUrl: VIDEO_BASE + 'ForBiggerBlazes.mp4' },
         ]
     };
 
@@ -648,6 +663,7 @@
             const daySchedule = [];
             let currentMinute = 360; // Start at 06:00
 
+            // Fill from 06:00 to next day 02:00 (minute 1560)
             while (currentMinute < 1560) {
                 const templateIndex = (daySchedule.length + day * 3) % templates.length;
                 const template = templates[templateIndex];
@@ -656,25 +672,29 @@
                 const startMin = currentMinute % 60;
 
                 daySchedule.push({
-                    startTime: `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`,
+                    startTime: `${String(startHour % 24).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`,
                     startMinute: currentMinute,
                     duration: template.duration,
                     name: template.name,
                     type: template.type,
                     genre: template.genre,
+                    videoUrl: template.videoUrl,
                     episode: template.type === 'program' ? `第${(day * 3 + daySchedule.length) % 20 + 1}期` : null
                 });
 
                 currentMinute += template.duration;
             }
 
+            // Off-air placeholder for 00:00-06:00 display only (actual playback
+            // during 00:00-02:00 is handled by previous day's late-night programs)
             daySchedule.unshift({
                 startTime: '00:00',
                 startMinute: 0,
                 duration: 360,
                 name: '测试信号/停机维护',
                 type: 'off-air',
-                genre: 'test'
+                genre: 'test',
+                videoUrl: null
             });
 
             weekSchedule.push(daySchedule);
@@ -727,13 +747,12 @@
     let isTransitioning = false;
     let staticAnimFrame = null;
     let bgAnimFrame = null;
-    let progressInterval = null;
     let osdTimeout = null;
-    let programCheckInterval = null;
-    let currentProgramIndex = -1;
+    let currentProgramStartMinute = -1; // track by startMinute to detect program change
+    let videoFallbackActive = false;
 
     // === DOM Elements ===
-    const programDisplay = document.getElementById('programDisplay');
+    const videoPlayer = document.getElementById('videoPlayer');
     const programCard = document.getElementById('programCard');
     const programTitle = document.getElementById('programTitle');
     const programTime = document.getElementById('programTime');
@@ -752,7 +771,7 @@
 
     // === Time Utilities ===
     function getCurrentDayOfWeek() {
-        return new Date().getDay(); // 0=Sunday
+        return new Date().getDay();
     }
 
     function getCurrentMinuteOfDay() {
@@ -774,59 +793,204 @@
         return names[day];
     }
 
-    // === Schedule Logic ===
+    // === Schedule Logic (with cross-midnight support) ===
+
+    // Returns { program, index, day } for the currently-playing program.
+    // Handles programs from yesterday that extend past midnight.
     function getCurrentProgram(channel) {
         const dayOfWeek = getCurrentDayOfWeek();
         const minuteOfDay = getCurrentMinuteOfDay();
-        const daySchedule = channel.schedule[dayOfWeek];
 
+        // Before 06:00: check if yesterday's late-night schedule covers this time
+        if (minuteOfDay < 360) {
+            const yesterday = (dayOfWeek + 6) % 7;
+            const yesterdaySchedule = channel.schedule[yesterday];
+            // Convert current time to "yesterday's timeline" (add 1440 to compare with startMinute > 1440)
+            const minuteOnYesterdayTimeline = minuteOfDay + 1440;
+
+            for (let i = yesterdaySchedule.length - 1; i >= 0; i--) {
+                const prog = yesterdaySchedule[i];
+                if (prog.startMinute > 1440 && minuteOnYesterdayTimeline >= prog.startMinute &&
+                    minuteOnYesterdayTimeline < prog.startMinute + prog.duration) {
+                    return { program: prog, index: i, day: yesterday };
+                }
+            }
+            // Also check the last program of yesterday that might span into today
+            for (let i = yesterdaySchedule.length - 1; i >= 0; i--) {
+                const prog = yesterdaySchedule[i];
+                if (prog.startMinute <= 1440 &&
+                    prog.startMinute + prog.duration > 1440 &&
+                    minuteOnYesterdayTimeline < prog.startMinute + prog.duration) {
+                    return { program: prog, index: i, day: yesterday };
+                }
+            }
+        }
+
+        // Normal lookup: find the latest program that has started
+        const daySchedule = channel.schedule[dayOfWeek];
         for (let i = daySchedule.length - 1; i >= 0; i--) {
             if (minuteOfDay >= daySchedule[i].startMinute) {
-                return { program: daySchedule[i], index: i };
+                return { program: daySchedule[i], index: i, day: dayOfWeek };
             }
         }
-        return { program: daySchedule[0], index: 0 };
+        return { program: daySchedule[0], index: 0, day: dayOfWeek };
     }
 
-    function getNextProgram(channel) {
-        const dayOfWeek = getCurrentDayOfWeek();
-        const minuteOfDay = getCurrentMinuteOfDay();
-        const daySchedule = channel.schedule[dayOfWeek];
-
-        for (let i = 0; i < daySchedule.length; i++) {
-            if (daySchedule[i].startMinute > minuteOfDay) {
-                return daySchedule[i];
-            }
+    // Returns the next program after the current one
+    function getNextProgram(channel, currentDay, currentIndex) {
+        const daySchedule = channel.schedule[currentDay];
+        if (currentIndex + 1 < daySchedule.length) {
+            return { program: daySchedule[currentIndex + 1], index: currentIndex + 1, day: currentDay };
         }
-        // Wrap to next day
-        const nextDay = (dayOfWeek + 1) % 7;
-        return channel.schedule[nextDay][0];
+        // Wrap to next calendar day
+        const nextDay = (currentDay + 1) % 7;
+        // Skip the off-air placeholder at index 0, go to first real program at index 1
+        const nextIndex = channel.schedule[nextDay].length > 1 ? 1 : 0;
+        return { program: channel.schedule[nextDay][nextIndex], index: nextIndex, day: nextDay };
     }
 
     function getProgramProgress(program) {
         const currentSecond = getCurrentSecondOfDay();
         const programStartSecond = program.startMinute * 60;
+        let elapsed;
+        if (program.startMinute >= 1440) {
+            // Program from yesterday, current time is early morning
+            elapsed = (currentSecond + 86400) - programStartSecond;
+        } else if (program.startMinute + program.duration > 1440 && currentSecond < program.startMinute * 60) {
+            // Program started before midnight, we're now after midnight
+            elapsed = (currentSecond + 86400) - programStartSecond;
+        } else {
+            elapsed = currentSecond - programStartSecond;
+        }
         const programDurationSeconds = program.duration * 60;
-        const elapsed = currentSecond - programStartSecond;
         return Math.max(0, Math.min(1, elapsed / programDurationSeconds));
     }
 
+    function getElapsedSeconds(program) {
+        const currentSecond = getCurrentSecondOfDay();
+        const programStartSecond = program.startMinute * 60;
+        if (program.startMinute >= 1440) {
+            return (currentSecond + 86400) - programStartSecond;
+        } else if (program.startMinute + program.duration > 1440 && currentSecond < program.startMinute * 60) {
+            return (currentSecond + 86400) - programStartSecond;
+        }
+        return currentSecond - programStartSecond;
+    }
+
     function getUpcomingPrograms(channel, count) {
-        const dayOfWeek = getCurrentDayOfWeek();
-        const minuteOfDay = getCurrentMinuteOfDay();
-        const daySchedule = channel.schedule[dayOfWeek];
+        const { index, day } = getCurrentProgram(channel);
+        const daySchedule = channel.schedule[day];
         const results = [];
 
-        let foundCurrent = false;
-        for (let i = 0; i < daySchedule.length && results.length < count; i++) {
-            if (daySchedule[i].startMinute >= minuteOfDay - daySchedule[i].duration && !foundCurrent) {
-                foundCurrent = true;
-            }
-            if (foundCurrent) {
-                results.push(daySchedule[i]);
+        for (let i = index; i < daySchedule.length && results.length < count; i++) {
+            results.push(daySchedule[i]);
+        }
+        // If we need more, wrap to next day
+        if (results.length < count) {
+            const nextDay = (day + 1) % 7;
+            const nextSchedule = channel.schedule[nextDay];
+            for (let i = 1; i < nextSchedule.length && results.length < count; i++) {
+                results.push(nextSchedule[i]);
             }
         }
         return results;
+    }
+
+    // === Video Playback ===
+
+    function playProgram(program) {
+        videoFallbackActive = false;
+
+        if (!program.videoUrl) {
+            showFallback(program);
+            return;
+        }
+
+        const elapsed = getElapsedSeconds(program);
+
+        videoPlayer.classList.remove('hidden');
+        programCard.classList.add('hidden');
+        if (bgAnimFrame) { cancelAnimationFrame(bgAnimFrame); bgAnimFrame = null; }
+
+        // Only reload if source changed
+        const currentSrc = videoPlayer.getAttribute('data-src');
+        if (currentSrc !== program.videoUrl) {
+            videoPlayer.setAttribute('data-src', program.videoUrl);
+            videoPlayer.src = program.videoUrl;
+            videoPlayer.load();
+        }
+
+        videoPlayer.onloadedmetadata = function() {
+            // Seek to elapsed position (loop video if shorter than schedule slot)
+            const duration = videoPlayer.duration;
+            if (duration > 0) {
+                const seekTo = elapsed % duration;
+                videoPlayer.currentTime = seekTo;
+            }
+            videoPlayer.play().catch(() => showFallback(program));
+        };
+
+        videoPlayer.onerror = function() {
+            showFallback(program);
+        };
+
+        // If metadata already loaded (cached), trigger manually
+        if (videoPlayer.readyState >= 1) {
+            const duration = videoPlayer.duration;
+            if (duration > 0) {
+                const seekTo = elapsed % duration;
+                videoPlayer.currentTime = seekTo;
+            }
+            videoPlayer.play().catch(() => showFallback(program));
+        }
+    }
+
+    function showFallback(program) {
+        videoFallbackActive = true;
+        videoPlayer.classList.add('hidden');
+        videoPlayer.pause();
+        programCard.classList.remove('hidden');
+        startBgAnimation(program.genre, CHANNELS[currentChannelIndex].color);
+    }
+
+    function stopPlayback() {
+        videoPlayer.pause();
+        videoPlayer.removeAttribute('src');
+        videoPlayer.removeAttribute('data-src');
+        videoPlayer.classList.add('hidden');
+        if (bgAnimFrame) { cancelAnimationFrame(bgAnimFrame); bgAnimFrame = null; }
+    }
+
+    // Video ended → advance to next program
+    videoPlayer.addEventListener('ended', function() {
+        const channel = CHANNELS[currentChannelIndex];
+        const { program, index, day } = getCurrentProgram(channel);
+        // Check schedule: if we're still within current program slot, loop the video
+        const progress = getProgramProgress(program);
+        if (progress < 0.98) {
+            // Still within schedule slot, restart video (loop within slot)
+            videoPlayer.currentTime = 0;
+            videoPlayer.play().catch(() => {});
+        } else {
+            // Schedule slot ending, advance
+            advanceToNextProgram();
+        }
+    });
+
+    function advanceToNextProgram() {
+        const channel = CHANNELS[currentChannelIndex];
+        const { index, day } = getCurrentProgram(channel);
+        const next = getNextProgram(channel, day, index);
+
+        // Transition
+        blackScreen.classList.add('active');
+        setTimeout(() => {
+            currentProgramStartMinute = next.program.startMinute;
+            updateProgramInfo(next.program);
+            playProgram(next.program);
+            blackScreen.classList.remove('active');
+            renderSchedule();
+        }, 250);
     }
 
     // === Rendering ===
@@ -851,12 +1015,11 @@
     function renderSchedule() {
         const channel = CHANNELS[currentChannelIndex];
         const programs = getUpcomingPrograms(channel, 6);
-        const minuteOfDay = getCurrentMinuteOfDay();
+        const { program: currentProg } = getCurrentProgram(channel);
 
         scheduleList.innerHTML = '';
         programs.forEach(prog => {
-            const isCurrent = minuteOfDay >= prog.startMinute &&
-                minuteOfDay < prog.startMinute + prog.duration;
+            const isCurrent = prog.startMinute === currentProg.startMinute;
             const div = document.createElement('div');
             div.className = `schedule-item${isCurrent ? ' current' : ''}${prog.type === 'ad' ? ' ad-slot' : ''}`;
             div.innerHTML = `
@@ -874,7 +1037,22 @@
         clockDisplay.textContent = `${dayStr} ${timeStr}`;
     }
 
-    // === Background Animation (simulates video content) ===
+    function updateProgramInfo(program) {
+        programTitle.textContent = program.name;
+        programTime.textContent = `${program.startTime} - ${addMinutes(program.startTime, program.duration)}`;
+        if (program.episode) {
+            programDesc.textContent = program.episode;
+        } else if (program.type === 'ad') {
+            programDesc.textContent = '广告占位 - 可插入商业内容';
+        } else if (program.type === 'off-air') {
+            programDesc.textContent = '频道暂停播出';
+        } else {
+            programDesc.textContent = '';
+        }
+        adBadge.style.display = program.type === 'ad' ? 'block' : 'none';
+    }
+
+    // === Background Animation (fallback when video unavailable) ===
     function startBgAnimation(genre, color) {
         const ctx = bgCanvas.getContext('2d');
         bgCanvas.width = 640;
@@ -914,12 +1092,9 @@
         animate();
     }
 
-    // Animation generators for different genres
     function drawNewsAnimation(ctx, frame, color) {
         ctx.fillStyle = '#1a237e';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Scrolling ticker
         ctx.fillStyle = '#c62828';
         ctx.fillRect(0, 420, 640, 60);
         ctx.fillStyle = '#fff';
@@ -927,8 +1102,6 @@
         const ticker = '最新消息 >>> 国内外要闻持续更新中... 经济数据发布... 科技动态... ';
         const offset = (frame * 2) % (ticker.length * 12);
         ctx.fillText(ticker + ticker, 640 - offset, 455);
-
-        // World map silhouette
         ctx.strokeStyle = 'rgba(100, 180, 255, 0.3)';
         ctx.lineWidth = 1;
         for (let i = 0; i < 10; i++) {
@@ -939,14 +1112,11 @@
     }
 
     function drawWeatherAnimation(ctx, frame, color) {
-        // Sky gradient
         const grad = ctx.createLinearGradient(0, 0, 0, 480);
         grad.addColorStop(0, '#0277bd');
         grad.addColorStop(1, '#81d4fa');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 640, 480);
-
-        // Clouds
         ctx.fillStyle = 'rgba(255,255,255,0.8)';
         for (let i = 0; i < 5; i++) {
             const x = ((frame * 0.5 + i * 150) % 800) - 80;
@@ -957,23 +1127,18 @@
             ctx.arc(x + 50, y, 30, 0, Math.PI * 2);
             ctx.fill();
         }
-
-        // Temperature
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 60px Courier New';
         ctx.fillText('26°C', 250, 300);
     }
 
     function drawNatureAnimation(ctx, frame, color) {
-        // Forest scene
         const grad = ctx.createLinearGradient(0, 0, 0, 480);
         grad.addColorStop(0, '#1b5e20');
         grad.addColorStop(0.6, '#2e7d32');
         grad.addColorStop(1, '#4e342e');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 640, 480);
-
-        // Trees
         for (let i = 0; i < 8; i++) {
             const x = i * 85 + 20;
             const sway = Math.sin(frame * 0.02 + i) * 3;
@@ -984,39 +1149,22 @@
             ctx.lineTo(x + 30 + sway, 400);
             ctx.fill();
         }
-
-        // Bird
-        const bx = (frame * 1.5) % 700;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(bx, 100 + Math.sin(frame * 0.05) * 20, 8, 0, Math.PI, true);
-        ctx.stroke();
     }
 
     function drawMovieAnimation(ctx, frame, color) {
         ctx.fillStyle = '#0d0d0d';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Letterbox bars
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, 640, 60);
         ctx.fillRect(0, 420, 640, 60);
-
-        // Film grain
         for (let i = 0; i < 200; i++) {
             const x = Math.random() * 640;
             const y = Math.random() * 480;
-            const brightness = Math.random() * 30;
-            ctx.fillStyle = `rgba(${brightness},${brightness},${brightness},0.3)`;
+            const b = Math.random() * 30;
+            ctx.fillStyle = `rgba(${b},${b},${b},0.3)`;
             ctx.fillRect(x, y, 2, 2);
         }
-
-        // Spotlight
-        const grd = ctx.createRadialGradient(
-            320 + Math.sin(frame * 0.01) * 100, 240, 10,
-            320, 240, 250
-        );
+        const grd = ctx.createRadialGradient(320 + Math.sin(frame * 0.01) * 100, 240, 10, 320, 240, 250);
         grd.addColorStop(0, 'rgba(80, 60, 30, 0.4)');
         grd.addColorStop(1, 'transparent');
         ctx.fillStyle = grd;
@@ -1026,34 +1174,20 @@
     function drawSportsAnimation(ctx, frame, color) {
         ctx.fillStyle = '#1b5e20';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Field lines
         ctx.strokeStyle = 'rgba(255,255,255,0.6)';
         ctx.lineWidth = 2;
         ctx.strokeRect(50, 50, 540, 380);
-        ctx.beginPath();
-        ctx.moveTo(320, 50);
-        ctx.lineTo(320, 430);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(320, 240, 60, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Ball
+        ctx.beginPath(); ctx.moveTo(320, 50); ctx.lineTo(320, 430); ctx.stroke();
+        ctx.beginPath(); ctx.arc(320, 240, 60, 0, Math.PI * 2); ctx.stroke();
         const bx = 320 + Math.cos(frame * 0.03) * 150;
         const by = 240 + Math.sin(frame * 0.05) * 100;
         ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(bx, by, 8, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI * 2); ctx.fill();
     }
 
     function drawVarietyAnimation(ctx, frame, color) {
-        // Stage with lights
         ctx.fillStyle = '#1a0033';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Disco lights
         for (let i = 0; i < 6; i++) {
             const angle = (frame * 0.02) + (i * Math.PI / 3);
             const x = 320 + Math.cos(angle) * 200;
@@ -1065,17 +1199,11 @@
             ctx.fillStyle = grd;
             ctx.fillRect(0, 0, 640, 480);
         }
-
-        // Stage floor
-        ctx.fillStyle = 'rgba(50, 0, 80, 0.5)';
-        ctx.fillRect(0, 350, 640, 130);
     }
 
     function drawMusicAnimation(ctx, frame, color) {
         ctx.fillStyle = '#1a0033';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Equalizer bars
         for (let i = 0; i < 32; i++) {
             const height = (Math.sin(frame * 0.1 + i * 0.5) + 1) * 100 + 20;
             const hue = (i * 10 + frame) % 360;
@@ -1090,25 +1218,16 @@
         grad.addColorStop(1, '#1a0f0a');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 640, 480);
-
-        // Warm interior light
         const grd = ctx.createRadialGradient(320, 200, 20, 320, 250, 300);
         grd.addColorStop(0, 'rgba(255, 200, 100, 0.2)');
         grd.addColorStop(1, 'transparent');
         ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, 640, 480);
-
-        // Subtle breathing effect
-        const alpha = 0.05 + Math.sin(frame * 0.02) * 0.02;
-        ctx.fillStyle = `rgba(255, 180, 80, ${alpha})`;
         ctx.fillRect(0, 0, 640, 480);
     }
 
     function drawGameAnimation(ctx, frame, color) {
         ctx.fillStyle = '#000066';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Spinning wheel
         for (let i = 0; i < 8; i++) {
             const angle = (i / 8) * Math.PI * 2 + frame * 0.02;
             ctx.fillStyle = i % 2 === 0 ? '#ff0066' : '#ffcc00';
@@ -1117,26 +1236,19 @@
             ctx.arc(320, 240, 150, angle, angle + Math.PI / 4);
             ctx.fill();
         }
-
         ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(320, 240, 30, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(320, 240, 30, 0, Math.PI * 2); ctx.fill();
     }
 
     function drawComedyAnimation(ctx, frame, color) {
         ctx.fillStyle = '#330000';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Curtain
         for (let i = 0; i < 10; i++) {
             const x = i * 70;
             const wave = Math.sin(frame * 0.03 + i * 0.5) * 10;
             ctx.fillStyle = i % 2 === 0 ? '#8b0000' : '#a00000';
             ctx.fillRect(x + wave, 0, 65, 480);
         }
-
-        // Spotlight
         const grd = ctx.createRadialGradient(320, 350, 10, 320, 300, 200);
         grd.addColorStop(0, 'rgba(255, 255, 200, 0.3)');
         grd.addColorStop(1, 'transparent');
@@ -1147,37 +1259,22 @@
     function drawDocumentaryAnimation(ctx, frame, color) {
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Old film effect
         ctx.fillStyle = `rgba(139, 119, 80, ${0.1 + Math.random() * 0.05})`;
         ctx.fillRect(0, 0, 640, 480);
-
-        // Floating particles (dust)
         ctx.fillStyle = 'rgba(200, 180, 140, 0.5)';
         for (let i = 0; i < 20; i++) {
             const x = (i * 67 + frame * 0.3) % 640;
             const y = (i * 43 + frame * 0.5) % 480;
-            ctx.beginPath();
-            ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI * 2); ctx.fill();
         }
     }
 
     function drawTalkAnimation(ctx, frame, color) {
         ctx.fillStyle = '#1a1a3e';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Two chairs silhouette
         ctx.fillStyle = '#2a2a4e';
         ctx.fillRect(150, 300, 100, 150);
         ctx.fillRect(390, 300, 100, 150);
-
-        // Ambient light
-        const grd = ctx.createRadialGradient(320, 200, 50, 320, 250, 300);
-        grd.addColorStop(0, 'rgba(100, 100, 200, 0.1)');
-        grd.addColorStop(1, 'transparent');
-        ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, 640, 480);
     }
 
     function drawLifestyleAnimation(ctx, frame, color) {
@@ -1186,8 +1283,6 @@
         grad.addColorStop(1, '#ffe0b2');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 640, 480);
-
-        // Decorative circles
         for (let i = 0; i < 5; i++) {
             ctx.strokeStyle = `rgba(255, 120, 0, ${0.2 - i * 0.03})`;
             ctx.lineWidth = 2;
@@ -1200,44 +1295,30 @@
     function drawFoodAnimation(ctx, frame, color) {
         ctx.fillStyle = '#3e2723';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Steam effect
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 2;
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
             let y = 400 - (frame * 0.5 + i * 50) % 300;
             ctx.moveTo(280 + i * 40, 400);
-            ctx.quadraticCurveTo(
-                290 + i * 40 + Math.sin(frame * 0.05 + i) * 20, y + 50,
-                280 + i * 40 + Math.sin(frame * 0.03 + i) * 10, y
-            );
+            ctx.quadraticCurveTo(290 + i * 40 + Math.sin(frame * 0.05 + i) * 20, y + 50, 280 + i * 40 + Math.sin(frame * 0.03 + i) * 10, y);
             ctx.stroke();
         }
-
-        // Plate
         ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.ellipse(320, 380, 100, 30, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.ellipse(320, 380, 100, 30, 0, 0, Math.PI * 2); ctx.fill();
     }
 
     function drawFitnessAnimation(ctx, frame, color) {
         ctx.fillStyle = '#263238';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Pulse/heartbeat line
         ctx.strokeStyle = '#00e676';
         ctx.lineWidth = 3;
         ctx.beginPath();
         for (let x = 0; x < 640; x += 2) {
             const phase = (x + frame * 3) * 0.02;
             let y = 240;
-            if (Math.floor(phase) % 4 === 0) {
-                y += Math.sin(phase * 10) * 80;
-            }
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+            if (Math.floor(phase) % 4 === 0) { y += Math.sin(phase * 10) * 80; }
+            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
     }
@@ -1245,61 +1326,34 @@
     function drawLawAnimation(ctx, frame, color) {
         ctx.fillStyle = '#1a237e';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Scale of justice
         ctx.strokeStyle = '#ffd700';
         ctx.lineWidth = 3;
         const sway = Math.sin(frame * 0.02) * 10;
-        // Pillar
-        ctx.beginPath();
-        ctx.moveTo(320, 150);
-        ctx.lineTo(320, 400);
-        ctx.stroke();
-        // Beam
-        ctx.beginPath();
-        ctx.moveTo(220, 200 + sway);
-        ctx.lineTo(420, 200 - sway);
-        ctx.stroke();
-        // Pans
-        ctx.beginPath();
-        ctx.arc(220, 240 + sway, 30, 0, Math.PI);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(420, 240 - sway, 30, 0, Math.PI);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(320, 150); ctx.lineTo(320, 400); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(220, 200 + sway); ctx.lineTo(420, 200 - sway); ctx.stroke();
+        ctx.beginPath(); ctx.arc(220, 240 + sway, 30, 0, Math.PI); ctx.stroke();
+        ctx.beginPath(); ctx.arc(420, 240 - sway, 30, 0, Math.PI); ctx.stroke();
     }
 
     function drawTestPattern(ctx, frame) {
-        // Classic TV test pattern
         const colors = ['#fff', '#ff0', '#0ff', '#0f0', '#f0f', '#f00', '#00f', '#000'];
         const barWidth = 640 / colors.length;
-        colors.forEach((color, i) => {
-            ctx.fillStyle = color;
-            ctx.fillRect(i * barWidth, 0, barWidth, 360);
-        });
-
-        // Bottom section
+        colors.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(i * barWidth, 0, barWidth, 360); });
         ctx.fillStyle = '#111';
         ctx.fillRect(0, 360, 640, 120);
         ctx.fillStyle = '#fff';
         ctx.font = '16px Courier New';
         ctx.fillText('测试信号 - 暂停播出', 230, 420);
-
-        // Flashing dot
         if (Math.floor(frame / 30) % 2 === 0) {
             ctx.fillStyle = '#f00';
-            ctx.beginPath();
-            ctx.arc(320, 450, 5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(320, 450, 5, 0, Math.PI * 2); ctx.fill();
         }
     }
 
     function drawAdAnimation(ctx, frame, color) {
-        // Colorful ad placeholder
         const hue = (frame * 2) % 360;
         ctx.fillStyle = `hsl(${hue}, 60%, 20%)`;
         ctx.fillRect(0, 0, 640, 480);
-
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 36px Courier New';
         ctx.textAlign = 'center';
@@ -1307,8 +1361,6 @@
         ctx.font = '18px Courier New';
         ctx.fillText('[ 广告位占位 - 可替换 ]', 320, 270);
         ctx.textAlign = 'left';
-
-        // Animated border
         ctx.strokeStyle = `hsl(${(hue + 180) % 360}, 80%, 50%)`;
         ctx.lineWidth = 4;
         ctx.setLineDash([10, 10]);
@@ -1320,16 +1372,13 @@
     function drawDefaultAnimation(ctx, frame, color) {
         ctx.fillStyle = color || '#333';
         ctx.fillRect(0, 0, 640, 480);
-
-        // Gentle wave
         ctx.strokeStyle = 'rgba(255,255,255,0.1)';
         ctx.lineWidth = 1;
         for (let i = 0; i < 5; i++) {
             ctx.beginPath();
             for (let x = 0; x < 640; x += 5) {
                 const y = 240 + Math.sin(x * 0.01 + frame * 0.02 + i) * (30 + i * 20);
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
@@ -1340,16 +1389,12 @@
         const ctx = staticCanvas.getContext('2d');
         staticCanvas.width = 320;
         staticCanvas.height = 240;
-
         function drawStatic() {
             const imageData = ctx.createImageData(320, 240);
             const data = imageData.data;
             for (let i = 0; i < data.length; i += 4) {
                 const v = Math.random() * 255;
-                data[i] = v;
-                data[i + 1] = v;
-                data[i + 2] = v;
-                data[i + 3] = 255;
+                data[i] = v; data[i + 1] = v; data[i + 2] = v; data[i + 3] = 255;
             }
             ctx.putImageData(imageData, 0, 0);
             staticAnimFrame = requestAnimationFrame(drawStatic);
@@ -1358,10 +1403,7 @@
     }
 
     function stopStatic() {
-        if (staticAnimFrame) {
-            cancelAnimationFrame(staticAnimFrame);
-            staticAnimFrame = null;
-        }
+        if (staticAnimFrame) { cancelAnimationFrame(staticAnimFrame); staticAnimFrame = null; }
     }
 
     // === Channel Switching ===
@@ -1369,27 +1411,23 @@
         if (index === currentChannelIndex || isTransitioning) return;
         isTransitioning = true;
 
-        const delay = 300 + Math.random() * 500; // 300-800ms random delay
+        const delay = 300 + Math.random() * 500;
 
-        // Phase 1: Black screen
+        stopPlayback();
         blackScreen.classList.add('active');
 
         setTimeout(() => {
-            // Phase 2: Static/snow
             blackScreen.classList.remove('active');
             staticOverlay.classList.add('active');
             startStatic();
-
-            // Play static sound effect (visual only for now)
             showChannelOsd(CHANNELS[index].id);
 
             setTimeout(() => {
-                // Phase 3: Switch to new channel
                 staticOverlay.classList.remove('active');
                 stopStatic();
                 currentChannelIndex = index;
-                currentProgramIndex = -1;
-                updateDisplay();
+                currentProgramStartMinute = -1;
+                tuneToCurrentProgram();
                 renderChannelList();
                 renderSchedule();
                 isTransitioning = false;
@@ -1398,70 +1436,52 @@
     }
 
     function nextChannel() {
-        const next = (currentChannelIndex + 1) % CHANNELS.length;
-        switchChannel(next);
+        switchChannel((currentChannelIndex + 1) % CHANNELS.length);
     }
 
     function prevChannel() {
-        const prev = (currentChannelIndex - 1 + CHANNELS.length) % CHANNELS.length;
-        switchChannel(prev);
+        switchChannel((currentChannelIndex - 1 + CHANNELS.length) % CHANNELS.length);
     }
 
     function showChannelOsd(channelId) {
         channelOsd.textContent = String(channelId).padStart(2, '0');
         channelOsd.classList.add('visible');
         if (osdTimeout) clearTimeout(osdTimeout);
-        osdTimeout = setTimeout(() => {
-            channelOsd.classList.remove('visible');
-        }, 3000);
+        osdTimeout = setTimeout(() => { channelOsd.classList.remove('visible'); }, 3000);
     }
 
-    // === Main Display Update ===
+    // === Main Display Logic ===
+
+    function tuneToCurrentProgram() {
+        const channel = CHANNELS[currentChannelIndex];
+        const { program } = getCurrentProgram(channel);
+        channelLogo.textContent = channel.logo;
+        currentProgramStartMinute = program.startMinute;
+        updateProgramInfo(program);
+        playProgram(program);
+    }
+
     function updateDisplay() {
         const channel = CHANNELS[currentChannelIndex];
-        const { program, index } = getCurrentProgram(channel);
+        const { program } = getCurrentProgram(channel);
 
-        // Update channel logo
-        channelLogo.textContent = channel.logo;
-
-        // Check if program changed (for continuous playback)
-        if (index !== currentProgramIndex) {
-            currentProgramIndex = index;
-            onProgramChange(program, channel);
-        }
-
-        // Update progress
-        const progress = getProgramProgress(program);
-        progressFill.style.width = `${progress * 100}%`;
-
-        // Update program info
-        programTitle.textContent = program.name;
-        programTime.textContent = `${program.startTime} - ${addMinutes(program.startTime, program.duration)}`;
-        if (program.episode) {
-            programDesc.textContent = program.episode;
-        } else if (program.type === 'ad') {
-            programDesc.textContent = '广告占位 - 可插入商业内容';
-        } else if (program.type === 'off-air') {
-            programDesc.textContent = '频道暂停播出';
-        } else {
-            programDesc.textContent = '';
-        }
-
-        // Ad badge
-        adBadge.style.display = program.type === 'ad' ? 'block' : 'none';
-
-        // Background animation
-        startBgAnimation(program.genre, channel.color);
-    }
-
-    function onProgramChange(program, channel) {
-        // Brief transition effect between programs
-        if (currentProgramIndex > 0) {
+        // Detect schedule-driven program change (covers case where video is looping
+        // but schedule says it's time for the next program)
+        if (program.startMinute !== currentProgramStartMinute && !isTransitioning) {
+            currentProgramStartMinute = program.startMinute;
             blackScreen.classList.add('active');
             setTimeout(() => {
+                updateProgramInfo(program);
+                playProgram(program);
                 blackScreen.classList.remove('active');
-            }, 200);
+                renderSchedule();
+            }, 250);
+            return;
         }
+
+        // Update progress bar
+        const progress = getProgramProgress(program);
+        progressFill.style.width = `${progress * 100}%`;
     }
 
     function addMinutes(timeStr, minutes) {
@@ -1475,14 +1495,8 @@
     // === Keyboard Controls ===
     document.addEventListener('keydown', (e) => {
         switch (e.key) {
-            case 'ArrowUp':
-                e.preventDefault();
-                prevChannel();
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                nextChannel();
-                break;
+            case 'ArrowUp': e.preventDefault(); prevChannel(); break;
+            case 'ArrowDown': e.preventDefault(); nextChannel(); break;
             case '1': case '2': case '3': case '4': case '5':
                 const idx = parseInt(e.key) - 1;
                 if (idx < CHANNELS.length) switchChannel(idx);
@@ -1494,26 +1508,18 @@
     function init() {
         renderChannelList();
         renderSchedule();
-        updateDisplay();
         updateClock();
+        tuneToCurrentProgram();
 
-        // Update every second
         setInterval(() => {
             updateClock();
             updateDisplay();
-            // Re-render schedule every 30 seconds
         }, 1000);
 
         setInterval(() => {
             renderSchedule();
             renderChannelList();
         }, 30000);
-
-        startStatic();
-        setTimeout(() => {
-            staticOverlay.classList.remove('active');
-            stopStatic();
-        }, 0);
     }
 
     init();
