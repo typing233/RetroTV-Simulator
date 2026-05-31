@@ -1,0 +1,32 @@
+{
+    "version": "1.0",
+    "ads": [
+        {
+            "id": "ext_ad_001",
+            "name": "自定义品牌广告A",
+            "category": "electronics",
+            "duration": 30,
+            "timeSlots": ["evening", "latenight"],
+            "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            "weight": 7
+        },
+        {
+            "id": "ext_ad_002",
+            "name": "自定义零食广告B",
+            "category": "snacks",
+            "duration": 15,
+            "timeSlots": ["afternoon"],
+            "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+            "weight": 6
+        },
+        {
+            "id": "ext_ad_003",
+            "name": "自定义健康广告C",
+            "category": "health",
+            "duration": 15,
+            "timeSlots": ["morning", "latenight"],
+            "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+            "weight": 5
+        }
+    ]
+}

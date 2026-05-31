@@ -1,0 +1,834 @@
+/* RetroTV Simulator - Complete Stylesheet */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #1a1a2e;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+.tv-room {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+/* === TV Frame === */
+.tv-frame {
+    background: linear-gradient(145deg, #8B4513, #5C3317, #3E2210);
+    border-radius: 30px;
+    padding: 40px 35px 60px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -2px 4px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.tv-frame::before {
+    content: '';
+    position: absolute;
+    top: 10px; left: 10px; right: 10px; bottom: 10px;
+    border-radius: 25px;
+    border: 2px solid rgba(255,255,255,0.05);
+    pointer-events: none;
+}
+
+.tv-brand {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #DAA520;
+    font-size: 14px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.tv-knobs {
+    position: absolute;
+    bottom: 15px;
+    right: 40px;
+    display: flex;
+    gap: 15px;
+}
+
+.knob {
+    width: 25px; height: 25px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #666, #222);
+    border: 2px solid #444;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.knob:hover { transform: rotate(30deg); }
+
+/* === Screen === */
+.screen-container {
+    width: 640px; height: 480px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+}
+
+.screen {
+    width: 100%; height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: filter 0.05s;
+}
+
+/* CRT Effects */
+.crt-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.scanlines {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+    pointer-events: none;
+    z-index: 11;
+}
+
+.vignette {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 12;
+}
+
+.screen-glare {
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 13;
+}
+
+.flicker { animation: flicker 0.15s infinite alternate; }
+
+@keyframes flicker {
+    0% { opacity: 0.97; }
+    100% { opacity: 1; }
+}
+
+/* === Video/Content Display === */
+.program-display {
+    width: 100%; height: 100%;
+    position: relative;
+}
+
+#videoPlayer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    background: #000;
+    transition: opacity 0.3s;
+}
+
+#videoPlayer.hidden { display: none; }
+
+.program-card {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    text-align: center;
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 2;
+    color: #fff;
+    overflow: hidden;
+}
+
+.program-card.hidden { display: none; }
+.program-card .bg-animation { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+.program-card .content { position: relative; z-index: 1; }
+.program-card .program-title { font-size: 28px; font-weight: bold; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+.program-card .program-time { font-size: 16px; opacity: 0.8; margin-bottom: 10px; }
+.program-card .program-desc { font-size: 14px; opacity: 0.6; max-width: 400px; }
+
+.ad-badge {
+    position: absolute;
+    top: 15px; left: 15px;
+    background: rgba(255, 200, 0, 0.9);
+    color: #000;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 3px;
+    z-index: 5;
+    animation: adBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes adBadgePulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 0.6; }
+}
+
+/* === Channel Logo Overlay === */
+.channel-logo {
+    position: absolute;
+    top: 15px; right: 15px;
+    z-index: 8;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    transition: opacity 0.5s ease;
+}
+
+.channel-logo.show { opacity: 0.7; }
+.channel-logo.fade { opacity: 0; }
+
+/* === Channel Number OSD === */
+.channel-osd {
+    position: absolute;
+    top: 20px; left: 20px;
+    z-index: 9;
+    color: #0f0;
+    font-size: 48px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-family: 'Courier New', monospace;
+}
+
+.channel-osd.visible { opacity: 1; }
+
+/* === Ad Info Overlay === */
+.ad-info-overlay {
+    position: absolute;
+    bottom: 35px; right: 15px;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 10px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.ad-info-overlay.visible { opacity: 1; }
+
+.ad-info-name {
+    color: #ffcc00;
+    font-size: 11px;
+}
+
+.ad-info-counter {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 10px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255,255,255,0.2);
+}
+
+/* === Static/Snow Effect === */
+.static-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 7;
+    opacity: 0;
+    transition: opacity 0.1s;
+    pointer-events: none;
+}
+
+.static-overlay.active { opacity: 1; }
+.static-canvas { width: 100%; height: 100%; }
+
+/* === Black Screen Transition === */
+.black-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 6;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+}
+
+.black-screen.active { opacity: 1; }
+
+/* === Progress Bar === */
+.progress-bar {
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 4px;
+    background: rgba(0,0,0,0.5);
+    z-index: 9;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00ccff);
+    width: 0%;
+    transition: width 1s linear;
+}
+
+/* === Noise Overlay === */
+.noise-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.4;
+    mix-blend-mode: overlay;
+}
+
+/* === Glitch Effect === */
+.glitch-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 14;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.05s;
+}
+
+.glitch-overlay.active { opacity: 1; }
+
+.glitch-overlay.glitch-horizontal {
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 4px,
+        rgba(255,0,0,0.1) 4px,
+        rgba(0,255,255,0.1) 6px
+    );
+    animation: glitchShift 0.1s steps(3) infinite;
+}
+
+.glitch-overlay.glitch-color {
+    background: rgba(255, 0, 100, 0.05);
+    animation: colorShift 0.15s steps(2) infinite;
+}
+
+.glitch-overlay.glitch-tear {
+    background: linear-gradient(
+        0deg,
+        transparent 0%, transparent 45%,
+        rgba(255,255,255,0.1) 45%, rgba(255,255,255,0.1) 55%,
+        transparent 55%
+    );
+    animation: tearMove 0.2s linear infinite;
+}
+
+.screen.signal-bad {
+    filter: hue-rotate(5deg) saturate(1.2);
+}
+
+.screen.color-bleed {
+    filter: hue-rotate(10deg) saturate(1.5) brightness(1.1);
+}
+
+.screen.channel-switch-flash {
+    filter: brightness(2) contrast(0.5);
+}
+
+@keyframes glitchShift {
+    0% { transform: translateX(-2px); }
+    33% { transform: translateX(3px); }
+    66% { transform: translateX(-1px); }
+    100% { transform: translateX(2px); }
+}
+
+@keyframes colorShift {
+    0% { background: rgba(255, 0, 100, 0.05); }
+    50% { background: rgba(0, 255, 100, 0.05); }
+    100% { background: rgba(100, 0, 255, 0.05); }
+}
+
+@keyframes tearMove {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+/* === VHS Tracking Effect === */
+.vhs-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 15;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(255,255,255,0.02) 3px,
+        rgba(255,255,255,0.02) 4px
+    );
+}
+
+.vhs-overlay.active {
+    opacity: 1;
+    animation: vhsTracking 0.3s steps(4) infinite;
+}
+
+@keyframes vhsTracking {
+    0% {
+        background-position: 0 0;
+        clip-path: inset(0 0 85% 0);
+    }
+    25% {
+        background-position: -3px 2px;
+        clip-path: inset(20% 0 60% 0);
+    }
+    50% {
+        background-position: 2px -1px;
+        clip-path: inset(50% 0 30% 0);
+    }
+    75% {
+        background-position: -1px 3px;
+        clip-path: inset(70% 0 10% 0);
+    }
+    100% {
+        background-position: 0 0;
+        clip-path: inset(90% 0 0 0);
+    }
+}
+
+/* === Preview Banner === */
+.preview-banner {
+    position: absolute;
+    bottom: 20px; left: 0; right: 0;
+    z-index: 9;
+    background: linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.8) 80%, transparent 100%);
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateY(100%);
+    transition: transform 0.4s ease;
+    pointer-events: none;
+}
+
+.preview-banner.visible { transform: translateY(0); }
+
+.preview-label {
+    color: #ffcc00;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    padding: 2px 8px;
+    border: 1px solid #ffcc00;
+    border-radius: 3px;
+}
+
+.preview-name {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* === Channel List Panel === */
+.channel-panel {
+    background: linear-gradient(180deg, #2a2a3e, #1a1a2e);
+    border-radius: 15px;
+    padding: 20px;
+    width: 280px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.panel-title {
+    color: #DAA520;
+    font-size: 18px;
+    margin-bottom: 15px;
+    text-align: center;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(218, 165, 32, 0.3);
+    padding-bottom: 10px;
+}
+
+.channel-list { list-style: none; }
+
+.channel-item {
+    padding: 12px 15px;
+    margin: 5px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #aaa;
+    border: 1px solid transparent;
+}
+
+.channel-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+.channel-item.active {
+    background: rgba(218, 165, 32, 0.15);
+    border-color: rgba(218, 165, 32, 0.4);
+    color: #DAA520;
+}
+
+.channel-num {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.channel-item.active .channel-num { background: rgba(218, 165, 32, 0.3); }
+.channel-info { flex: 1; min-width: 0; }
+.channel-name { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+.channel-now-playing { font-size: 11px; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* === Schedule Panel === */
+.schedule-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.schedule-title {
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.schedule-item {
+    padding: 8px 10px;
+    margin: 3px 0;
+    border-radius: 5px;
+    font-size: 12px;
+    color: #888;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.schedule-item.current { background: rgba(0, 255, 136, 0.1); color: #00ff88; }
+.schedule-item.ad-slot { border-left: 2px solid #ffcc00; opacity: 0.7; }
+.schedule-time { font-weight: bold; margin-right: 10px; white-space: nowrap; }
+.schedule-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* === Clock Display === */
+.clock-display {
+    text-align: center;
+    color: #0f0;
+    font-size: 14px;
+    margin-bottom: 15px;
+    padding: 8px;
+    background: rgba(0, 255, 0, 0.05);
+    border-radius: 5px;
+    border: 1px solid rgba(0, 255, 0, 0.1);
+}
+
+/* === Schedule Button === */
+.schedule-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(218, 165, 32, 0.15);
+    border: 1px solid rgba(218, 165, 32, 0.4);
+    border-radius: 8px;
+    color: #DAA520;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+
+.schedule-btn:hover {
+    background: rgba(218, 165, 32, 0.25);
+    border-color: rgba(218, 165, 32, 0.6);
+}
+
+/* === Weekly Schedule Modal === */
+.schedule-modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.schedule-modal.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.schedule-modal-content {
+    background: #1a1a2e;
+    border-radius: 15px;
+    padding: 30px;
+    width: 90vw;
+    max-width: 1200px;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.schedule-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.schedule-modal-header h2 {
+    color: #DAA520;
+    font-size: 22px;
+    letter-spacing: 3px;
+}
+
+.schedule-header-info {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.schedule-period-badge {
+    font-size: 11px;
+    color: #aaa;
+    background: rgba(255,255,255,0.05);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.schedule-ad-count {
+    font-size: 11px;
+    color: #ffcc00;
+    opacity: 0.7;
+}
+
+.schedule-close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 5px 10px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.schedule-close-btn:hover { color: #fff; }
+
+.schedule-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.schedule-tab {
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 5px 5px 0 0;
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.schedule-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.schedule-tab.active { color: #fff; background: rgba(255,255,255,0.1); }
+
+/* === Schedule Legend === */
+.schedule-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #888;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* === Schedule Grid === */
+.schedule-grid-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    position: relative;
+}
+
+.schedule-grid {
+    position: relative;
+}
+
+.schedule-grid-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 10px;
+    position: sticky;
+    top: 0;
+    background: #1a1a2e;
+    padding: 8px 0;
+    z-index: 2;
+}
+
+.schedule-day-col, .schedule-time-col {
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    padding: 5px;
+    font-weight: bold;
+}
+
+.schedule-day-col small {
+    color: #555;
+    font-weight: normal;
+}
+
+.schedule-day-col.today { color: #00ff88; }
+
+.schedule-grid-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    align-items: start;
+}
+
+.schedule-day-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.schedule-cell {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.schedule-cell:hover { transform: scale(1.02); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.schedule-cell.current { outline: 2px solid #00ff88; outline-offset: -2px; }
+.schedule-cell.ad-cell { opacity: 0.6; }
+.cell-time { font-size: 10px; opacity: 0.7; }
+.cell-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell-duration { font-size: 9px; opacity: 0.5; }
+
+.cell-live {
+    font-size: 9px;
+    color: #00ff88;
+    font-weight: bold;
+    animation: livePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* === Time Indicator === */
+.time-indicator {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: #ff4444;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.time-indicator::before {
+    content: '';
+    position: absolute;
+    left: -4px; top: -3px;
+    width: 8px; height: 8px;
+    background: #ff4444;
+    border-radius: 50%;
+}
+
+.time-indicator-label {
+    position: absolute;
+    left: 10px; top: -12px;
+    font-size: 9px;
+    color: #ff4444;
+    font-weight: bold;
+}
+
+/* === Keyboard Hint === */
+.keyboard-hint {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 5px;
+    font-size: 10px;
+    color: #555;
+    line-height: 1.6;
+}
+
+.keyboard-hint kbd {
+    background: rgba(255,255,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 10px;
+}
+
+/* === Responsive === */
+@media (max-width: 1024px) {
+    .tv-room { flex-direction: column; align-items: center; }
+    .screen-container { width: 480px; height: 360px; }
+}
+
+/* === Scrollbar === */
+.schedule-grid-container::-webkit-scrollbar { width: 6px; }
+.schedule-grid-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+.schedule-grid-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+.schedule-grid-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }

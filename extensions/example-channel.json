@@ -1,0 +1,17 @@
+{
+    "version": "1.0",
+    "channel": {
+        "id": 100,
+        "name": "怀旧金曲",
+        "logo": "金曲TV",
+        "color": "#ff5500",
+        "programs": [
+            { "name": "经典老歌回顾", "duration": 45, "type": "program", "genre": "music", "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
+            { "name": "华语金曲榜", "duration": 30, "type": "program", "genre": "music", "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" },
+            { "name": "广告时段", "duration": 5, "type": "ad", "genre": "ad" },
+            { "name": "MV精选", "duration": 60, "type": "program", "genre": "music", "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" },
+            { "name": "音乐故事", "duration": 30, "type": "program", "genre": "talk", "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
+            { "name": "演唱会直播", "duration": 90, "type": "program", "genre": "music", "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4" }
+        ]
+    }
+}
