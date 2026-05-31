@@ -84,16 +84,20 @@ const AdEngine = (function() {
 
         const periodCategories = RetroTVConfig.ads.timePeriods[timePeriod].categories;
 
-        const eligible = allAds.filter(ad =>
+        let eligible = allAds.filter(ad =>
             ad.timeSlots.includes(timePeriod) && !history.includes(ad.id)
         );
 
+        // If all ads exhausted for this channel, clear history and retry once
         if (eligible.length === 0) {
             playHistory[channelId] = [];
-            return selectAds(channelId, slotDurationMinutes);
+            eligible = allAds.filter(ad => ad.timeSlots.includes(timePeriod));
         }
 
-        const prioritized = eligible.sort((a, b) => {
+        if (eligible.length === 0) return [];
+
+        // Sort by: category match > fewer plays > higher weight
+        const sorted = eligible.slice().sort((a, b) => {
             const aMatch = periodCategories.includes(a.category) ? 1 : 0;
             const bMatch = periodCategories.includes(b.category) ? 1 : 0;
             if (aMatch !== bMatch) return bMatch - aMatch;
@@ -105,14 +109,20 @@ const AdEngine = (function() {
             return b.weight - a.weight;
         });
 
+        // Fill slot with unique ads, never repeat within same slot
         const selected = [];
         let remainingSeconds = slotSeconds;
-        const used = new Set();
+        const usedInSlot = new Set();
 
-        while (remainingSeconds > 0 && used.size < prioritized.length) {
-            const available = prioritized.filter(ad => !used.has(ad.id) && ad.duration <= remainingSeconds);
+        while (remainingSeconds > 0) {
+            const available = sorted.filter(ad =>
+                !usedInSlot.has(ad.id) && ad.duration <= remainingSeconds
+            );
+
+            // No more unique ads that fit - stop filling, don't repeat
             if (available.length === 0) break;
 
+            // Weighted random from top candidates
             const topCandidates = available.slice(0, Math.min(5, available.length));
             const totalWeight = topCandidates.reduce((sum, ad) => sum + ad.weight, 0);
             let random = Math.random() * totalWeight;
@@ -123,7 +133,7 @@ const AdEngine = (function() {
             }
 
             selected.push(chosen);
-            used.add(chosen.id);
+            usedInSlot.add(chosen.id);
             recordPlay(channelId, chosen.id);
             remainingSeconds -= chosen.duration;
         }
@@ -155,20 +165,9 @@ const AdEngine = (function() {
         return names[period] || period;
     }
 
-    function getAdQueueInfo(queue, currentIndex) {
-        if (!queue || queue.length === 0) return null;
-        return {
-            current: currentIndex + 1,
-            total: queue.length,
-            currentAd: queue[currentIndex],
-            remaining: queue.length - currentIndex - 1
-        };
-    }
-
     return {
         selectAds,
         getAdDisplayInfo,
-        getAdQueueInfo,
         registerAds,
         getLibrarySize,
         getCurrentTimePeriod,

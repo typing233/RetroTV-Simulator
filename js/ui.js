@@ -20,14 +20,21 @@ const UI = (function() {
         progressFill = document.getElementById('progressFill');
 
         applyLogoConfig();
+        applyEffectsConfig();
         startLogoReshow();
     }
 
     function applyLogoConfig() {
         const config = RetroTVConfig.channelLogo;
         if (!channelLogo) return;
-        channelLogo.style.opacity = config.opacity;
 
+        // Apply fadeSpeed as CSS transition duration
+        channelLogo.style.transitionDuration = (config.fadeSpeed / 1000) + 's';
+
+        // Apply opacity
+        channelLogo.style.setProperty('--logo-opacity', config.opacity);
+
+        // Apply position
         const positions = {
             'top-right': { top: '15px', right: '15px', bottom: '', left: '' },
             'top-left': { top: '15px', right: '', bottom: '', left: '15px' },
@@ -40,6 +47,27 @@ const UI = (function() {
         if (config.backgroundBlur) {
             channelLogo.style.backdropFilter = 'blur(4px)';
             channelLogo.style.webkitBackdropFilter = 'blur(4px)';
+        } else {
+            channelLogo.style.backdropFilter = 'none';
+            channelLogo.style.webkitBackdropFilter = 'none';
+        }
+    }
+
+    function applyEffectsConfig() {
+        const screen = document.querySelector('.screen');
+        if (!screen) return;
+
+        // scanlines.enabled
+        const scanlines = screen.querySelector('.scanlines');
+        if (scanlines) {
+            scanlines.style.display = RetroTVConfig.effects.scanlines.enabled ? '' : 'none';
+        }
+
+        // flicker.enabled
+        if (RetroTVConfig.effects.flicker.enabled) {
+            screen.classList.add('flicker');
+        } else {
+            screen.classList.remove('flicker');
         }
     }
 
@@ -54,29 +82,30 @@ const UI = (function() {
     }
 
     function showLogo(text) {
-        if (!RetroTVConfig.channelLogo.enabled) return;
+        if (!RetroTVConfig.channelLogo.enabled) {
+            channelLogo.style.opacity = '0';
+            return;
+        }
         channelLogo.textContent = text;
-        channelLogo.classList.remove('fade');
-        channelLogo.classList.add('show');
+        channelLogo.style.opacity = String(RetroTVConfig.channelLogo.opacity);
 
         if (RetroTVConfig.channelLogo.alwaysVisible) return;
 
         if (logoTimeout) clearTimeout(logoTimeout);
         logoTimeout = setTimeout(() => {
-            channelLogo.classList.add('fade');
+            channelLogo.style.opacity = '0';
         }, RetroTVConfig.channelLogo.showDuration);
     }
 
     function flashLogo() {
         if (!RetroTVConfig.channelLogo.enabled) return;
-        channelLogo.classList.remove('fade');
-        channelLogo.classList.add('show');
+        channelLogo.style.opacity = String(RetroTVConfig.channelLogo.opacity);
 
         if (RetroTVConfig.channelLogo.alwaysVisible) return;
 
         if (logoTimeout) clearTimeout(logoTimeout);
         logoTimeout = setTimeout(() => {
-            channelLogo.classList.add('fade');
+            channelLogo.style.opacity = '0';
         }, 3000);
     }
 

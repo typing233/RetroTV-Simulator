@@ -105,10 +105,12 @@ const TVApp = (function() {
 
         const blackScreen = document.getElementById('blackScreen');
         const staticOverlay = document.getElementById('staticOverlay');
-        const switchDelay = RetroTVConfig.video.channelSwitchDelay;
+
+        // Use channelSwitchStatic.duration from config
+        const configStaticDuration = RetroTVConfig.effects.channelSwitchStatic.duration;
         const targetProgram = TVUtils.getCurrentProgram(CHANNELS[index]).program;
         const isPreloaded = targetProgram && targetProgram.videoUrl && Player.isPreloaded(targetProgram.videoUrl);
-        const staticDuration = isPreloaded ? Math.max(80, switchDelay * 0.5) : switchDelay + Math.random() * 100;
+        const staticDuration = isPreloaded ? Math.max(60, configStaticDuration * 0.4) : configStaticDuration;
 
         Player.stop();
         EffectsEngine.hidePreviewBanner();

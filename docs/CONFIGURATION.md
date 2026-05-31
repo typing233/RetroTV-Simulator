@@ -12,7 +12,6 @@
 | `preloadMax` | `4` | 最大预加载视频数 |
 | `preloadAdjacentChannels` | `true` | 是否预加载相邻频道 |
 | `transitionDuration` | `150` | 节目切换黑屏时间(ms) |
-| `channelSwitchDelay` | `120` | 频道切换雪花持续时间(ms) |
 
 ---
 

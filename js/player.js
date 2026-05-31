@@ -7,6 +7,8 @@ const Player = (function() {
     let currentProgram = null;
     let currentChannel = null;
     let videoFallbackActive = false;
+    let adTimer = null;
+    let adSlotEndTimer = null;
 
     const preloadPool = new Map();
     const MAX_PRELOAD = RetroTVConfig.video.preloadMax;
@@ -22,10 +24,16 @@ const Player = (function() {
         videoPlayer.addEventListener('ended', onVideoEnded);
     }
 
+    function clearAdTimers() {
+        if (adTimer) { clearTimeout(adTimer); adTimer = null; }
+        if (adSlotEndTimer) { clearTimeout(adSlotEndTimer); adSlotEndTimer = null; }
+    }
+
     function playProgram(program, channel) {
         currentProgram = program;
         currentChannel = channel;
         videoFallbackActive = false;
+        clearAdTimers();
 
         EffectsEngine.hideAdInfo();
 
@@ -42,9 +50,13 @@ const Player = (function() {
                 videoUrl = ads[0].videoUrl;
                 program._adQueue = ads;
                 program._adIndex = 0;
+                program._adSlotDuration = slotDuration * 60;
+                program._adSlotStart = Date.now();
                 EffectsEngine.showAdInfo(ads[0].name, 0, ads.length);
+                startAdTimer(ads[0].duration);
+                startSlotEndTimer(slotDuration * 60);
             } else {
-                showFallback(program, channel);
+                endAdSlot();
                 return;
             }
         }
@@ -58,7 +70,11 @@ const Player = (function() {
         const preloaded = preloadPool.get(videoUrl);
         if (preloaded && preloaded.readyState >= 2) {
             videoPlayer.src = preloaded.src;
-            videoPlayer.currentTime = preloaded.currentTime;
+            if (program.type !== 'ad') {
+                videoPlayer.currentTime = preloaded.currentTime;
+            } else {
+                videoPlayer.currentTime = 0;
+            }
             videoPlayer.play().catch(() => showFallback(program, channel));
             preloadPool.delete(videoUrl);
             return;
@@ -80,7 +96,11 @@ const Player = (function() {
         };
 
         videoPlayer.onerror = function() {
-            showFallback(program, channel);
+            if (program.type === 'ad') {
+                advanceAdOrEnd();
+            } else {
+                showFallback(program, channel);
+            }
         };
 
         if (videoPlayer.readyState >= 1) {
@@ -92,6 +112,81 @@ const Player = (function() {
         }
     }
 
+    function startAdTimer(adDurationSeconds) {
+        if (adTimer) clearTimeout(adTimer);
+        adTimer = setTimeout(() => {
+            adTimer = null;
+            advanceAdOrEnd();
+        }, adDurationSeconds * 1000);
+    }
+
+    function startSlotEndTimer(slotDurationSeconds) {
+        if (adSlotEndTimer) clearTimeout(adSlotEndTimer);
+        adSlotEndTimer = setTimeout(() => {
+            adSlotEndTimer = null;
+            endAdSlot();
+        }, slotDurationSeconds * 1000);
+    }
+
+    function advanceAdOrEnd() {
+        if (!currentProgram || !currentProgram._adQueue) {
+            endAdSlot();
+            return;
+        }
+
+        const elapsed = (Date.now() - currentProgram._adSlotStart) / 1000;
+        const remaining = currentProgram._adSlotDuration - elapsed;
+
+        if (remaining <= 2) {
+            endAdSlot();
+            return;
+        }
+
+        currentProgram._adIndex++;
+        if (currentProgram._adIndex >= currentProgram._adQueue.length) {
+            endAdSlot();
+            return;
+        }
+
+        const nextAd = currentProgram._adQueue[currentProgram._adIndex];
+
+        if (nextAd.duration > remaining + 2) {
+            endAdSlot();
+            return;
+        }
+
+        const actualDuration = Math.min(nextAd.duration, remaining);
+
+        if (RetroTVConfig.ads.transitionBetweenAds) {
+            videoPlayer.style.opacity = '0';
+            setTimeout(() => {
+                videoPlayer.src = nextAd.videoUrl;
+                videoPlayer.currentTime = 0;
+                videoPlayer.play().catch(() => advanceAdOrEnd());
+                EffectsEngine.showAdInfo(nextAd.name, currentProgram._adIndex, currentProgram._adQueue.length);
+                videoPlayer.style.opacity = '1';
+                startAdTimer(actualDuration);
+            }, RetroTVConfig.ads.transitionDuration);
+        } else {
+            videoPlayer.src = nextAd.videoUrl;
+            videoPlayer.currentTime = 0;
+            videoPlayer.play().catch(() => advanceAdOrEnd());
+            EffectsEngine.showAdInfo(nextAd.name, currentProgram._adIndex, currentProgram._adQueue.length);
+            startAdTimer(actualDuration);
+        }
+    }
+
+    function endAdSlot() {
+        clearAdTimers();
+        videoPlayer.pause();
+        EffectsEngine.hideAdInfo();
+        if (currentProgram) {
+            currentProgram._adQueue = null;
+            currentProgram._adIndex = 0;
+        }
+        if (typeof TVApp !== 'undefined') TVApp.advanceToNextProgram();
+    }
+
     function showFallback(program, channel) {
         videoFallbackActive = true;
         videoPlayer.classList.add('hidden');
@@ -101,6 +196,7 @@ const Player = (function() {
     }
 
     function stop() {
+        clearAdTimers();
         videoPlayer.pause();
         videoPlayer.removeAttribute('src');
         videoPlayer.removeAttribute('data-src');
@@ -110,30 +206,16 @@ const Player = (function() {
 
     function onVideoEnded() {
         if (currentProgram && currentProgram._adQueue) {
-            currentProgram._adIndex++;
-            if (currentProgram._adIndex < currentProgram._adQueue.length) {
-                const nextAd = currentProgram._adQueue[currentProgram._adIndex];
-
-                if (RetroTVConfig.ads.transitionBetweenAds) {
-                    videoPlayer.style.opacity = '0';
-                    setTimeout(() => {
-                        videoPlayer.src = nextAd.videoUrl;
-                        videoPlayer.currentTime = 0;
-                        videoPlayer.play().catch(() => {});
-                        EffectsEngine.showAdInfo(nextAd.name, currentProgram._adIndex, currentProgram._adQueue.length);
-                        videoPlayer.style.opacity = '1';
-                    }, RetroTVConfig.ads.transitionDuration);
-                } else {
-                    videoPlayer.src = nextAd.videoUrl;
-                    videoPlayer.currentTime = 0;
-                    videoPlayer.play().catch(() => {});
-                    EffectsEngine.showAdInfo(nextAd.name, currentProgram._adIndex, currentProgram._adQueue.length);
-                }
-                return;
+            // Video ended before timer - ad video was shorter than configured duration.
+            // Timer will handle the advance, do nothing here.
+            // But if timer already cleared (shouldn't happen), advance.
+            if (!adTimer) {
+                advanceAdOrEnd();
             }
-            EffectsEngine.hideAdInfo();
+            return;
         }
 
+        // Normal program: loop or advance
         const progress = TVUtils.getProgramProgress(currentProgram);
         if (progress < 0.98) {
             videoPlayer.currentTime = 0;

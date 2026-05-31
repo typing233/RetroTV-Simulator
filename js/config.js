@@ -4,8 +4,7 @@ const RetroTVConfig = {
         baseUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/',
         preloadMax: 4,
         preloadAdjacentChannels: true,
-        transitionDuration: 150,
-        channelSwitchDelay: 120
+        transitionDuration: 150
     },
 
     ads: {
