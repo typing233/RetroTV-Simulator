@@ -577,46 +577,7 @@
     // RetroTV Simulator - Core Engine
     // ========================================
 
-    // === Channel & Schedule Data ===
-    const CHANNELS = [
-        {
-            id: 1,
-            name: 'CCTV-1 综合',
-            logo: 'CCTV-1',
-            color: '#cc0000',
-            schedule: generateSchedule('cctv1')
-        },
-        {
-            id: 2,
-            name: 'CCTV-3 综艺',
-            logo: 'CCTV-3',
-            color: '#ff6600',
-            schedule: generateSchedule('cctv3')
-        },
-        {
-            id: 3,
-            name: 'CCTV-6 电影',
-            logo: 'CCTV-6',
-            color: '#0066cc',
-            schedule: generateSchedule('cctv6')
-        },
-        {
-            id: 4,
-            name: 'CCTV-5 体育',
-            logo: 'CCTV-5',
-            color: '#009933',
-            schedule: generateSchedule('cctv5')
-        },
-        {
-            id: 5,
-            name: '地方卫视',
-            logo: '卫视',
-            color: '#9933cc',
-            schedule: generateSchedule('local')
-        }
-    ];
-
-    // Program templates for different channels
+    // === Program Templates (must be defined before CHANNELS) ===
     const PROGRAM_TEMPLATES = {
         cctv1: [
             { name: '新闻联播', duration: 30, type: 'program', genre: 'news' },
@@ -678,7 +639,7 @@
         ]
     };
 
-    // Generate a full weekly schedule for a channel
+    // === Schedule Generator (must be defined before CHANNELS) ===
     function generateSchedule(channelType) {
         const templates = PROGRAM_TEMPLATES[channelType];
         const weekSchedule = [];
@@ -687,9 +648,7 @@
             const daySchedule = [];
             let currentMinute = 360; // Start at 06:00
 
-            // Fill from 06:00 to next day 02:00 (20 hours)
             while (currentMinute < 1560) {
-                // Pick program with some day-based variation
                 const templateIndex = (daySchedule.length + day * 3) % templates.length;
                 const template = templates[templateIndex];
 
@@ -703,14 +662,12 @@
                     name: template.name,
                     type: template.type,
                     genre: template.genre,
-                    // Add episode info for variety
                     episode: template.type === 'program' ? `第${(day * 3 + daySchedule.length) % 20 + 1}期` : null
                 });
 
                 currentMinute += template.duration;
             }
 
-            // Fill early morning (02:00 - 06:00) with test pattern / off-air
             daySchedule.unshift({
                 startTime: '00:00',
                 startMinute: 0,
@@ -725,6 +682,45 @@
 
         return weekSchedule;
     }
+
+    // === Channel & Schedule Data ===
+    const CHANNELS = [
+        {
+            id: 1,
+            name: 'CCTV-1 综合',
+            logo: 'CCTV-1',
+            color: '#cc0000',
+            schedule: generateSchedule('cctv1')
+        },
+        {
+            id: 2,
+            name: 'CCTV-3 综艺',
+            logo: 'CCTV-3',
+            color: '#ff6600',
+            schedule: generateSchedule('cctv3')
+        },
+        {
+            id: 3,
+            name: 'CCTV-6 电影',
+            logo: 'CCTV-6',
+            color: '#0066cc',
+            schedule: generateSchedule('cctv6')
+        },
+        {
+            id: 4,
+            name: 'CCTV-5 体育',
+            logo: 'CCTV-5',
+            color: '#009933',
+            schedule: generateSchedule('cctv5')
+        },
+        {
+            id: 5,
+            name: '地方卫视',
+            logo: '卫视',
+            color: '#9933cc',
+            schedule: generateSchedule('local')
+        }
+    ];
 
     // === State ===
     let currentChannelIndex = 0;
