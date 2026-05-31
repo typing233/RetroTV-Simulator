@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复古电视模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .tv-room {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        /* === TV Frame === */
+        .tv-frame {
+            background: linear-gradient(145deg, #8B4513, #5C3317, #3E2210);
+            border-radius: 30px;
+            padding: 40px 35px 60px;
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.8),
+                inset 0 2px 4px rgba(255,255,255,0.1),
+                inset 0 -2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .tv-frame::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border-radius: 25px;
+            border: 2px solid rgba(255,255,255,0.05);
+            pointer-events: none;
+        }
+
+        .tv-brand {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #DAA520;
+            font-size: 14px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .tv-knobs {
+            position: absolute;
+            bottom: 15px;
+            right: 40px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .knob {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #666, #222);
+            border: 2px solid #444;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .knob:hover {
+            transform: rotate(30deg);
+        }
+
+        /* === Screen === */
+        .screen-container {
+            width: 640px;
+            height: 480px;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* CRT Effects */
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.15) 2px,
+                rgba(0, 0, 0, 0.15) 4px
+            );
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center,
+                transparent 60%,
+                rgba(0, 0, 0, 0.6) 100%
+            );
+            pointer-events: none;
+            z-index: 12;
+        }
+
+        .screen-glare {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                ellipse at 30% 20%,
+                rgba(255, 255, 255, 0.03) 0%,
+                transparent 50%
+            );
+            pointer-events: none;
+            z-index: 13;
+        }
+
+        .flicker {
+            animation: flicker 0.15s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            100% { opacity: 1; }
+        }
+
+        /* === Video/Content Display === */
+        .program-display {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            position: relative;
+        }
+
+        .program-display video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .program-card {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .program-card .bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .program-card .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .program-card .program-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .program-card .program-time {
+            font-size: 16px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .program-card .program-desc {
+            font-size: 14px;
+            opacity: 0.6;
+            max-width: 400px;
+        }
+
+        .ad-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 200, 0, 0.9);
+            color: #000;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+            z-index: 5;
+        }
+
+        /* === Channel Logo Overlay === */
+        .channel-logo {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 8;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            transition: opacity 0.5s;
+        }
+
+        .channel-logo.show {
+            opacity: 1;
+        }
+
+        .channel-logo.fade {
+            opacity: 0;
+        }
+
+        /* === Channel Number OSD === */
+        .channel-osd {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 9;
+            color: #0f0;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+
+        .channel-osd.visible {
+            opacity: 1;
+        }
+
+        /* === Static/Snow Effect === */
+        .static-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 7;
+            opacity: 0;
+            transition: opacity 0.1s;
+            pointer-events: none;
+        }
+
+        .static-overlay.active {
+            opacity: 1;
+        }
+
+        .static-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* === Black Screen Transition === */
+        .black-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 6;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+
+        .black-screen.active {
+            opacity: 1;
+        }
+
+        /* === Progress Bar === */
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(0,0,0,0.5);
+            z-index: 9;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00ccff);
+            width: 0%;
+            transition: width 1s linear;
+        }
+
+        /* === Channel List Panel === */
+        .channel-panel {
+            background: linear-gradient(180deg, #2a2a3e, #1a1a2e);
+            border-radius: 15px;
+            padding: 20px;
+            width: 280px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .panel-title {
+            color: #DAA520;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(218, 165, 32, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .channel-list {
+            list-style: none;
+        }
+
+        .channel-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #aaa;
+            border: 1px solid transparent;
+        }
+
+        .channel-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .channel-item.active {
+            background: rgba(218, 165, 32, 0.15);
+            border-color: rgba(218, 165, 32, 0.4);
+            color: #DAA520;
+        }
+
+        .channel-num {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .channel-item.active .channel-num {
+            background: rgba(218, 165, 32, 0.3);
+        }
+
+        .channel-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .channel-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .channel-now-playing {
+            font-size: 11px;
+            opacity: 0.6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* === Schedule Panel === */
+        .schedule-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .schedule-title {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .schedule-item {
+            padding: 8px 10px;
+            margin: 3px 0;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .schedule-item.current {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+
+        .schedule-item.ad-slot {
+            border-left: 2px solid #ffcc00;
+            opacity: 0.7;
+        }
+
+        .schedule-time {
+            font-weight: bold;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        .schedule-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* === Clock Display === */
+        .clock-display {
+            text-align: center;
+            color: #0f0;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: rgba(0, 255, 0, 0.05);
+            border-radius: 5px;
+            border: 1px solid rgba(0, 255, 0, 0.1);
+        }
+
+        /* === Responsive === */
+        @media (max-width: 1024px) {
+            .tv-room {
+                flex-direction: column;
+                align-items: center;
+            }
+            .screen-container {
+                width: 480px;
+                height: 360px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tv-room">
+        <!-- TV Set -->
+        <div class="tv-frame">
+            <div class="screen-container">
+                <div class="screen flicker">
+                    <!-- Program Content -->
+                    <div class="program-display" id="programDisplay">
+                        <div class="program-card" id="programCard">
+                            <canvas class="bg-animation" id="bgCanvas"></canvas>
+                            <div class="content">
+                                <div class="program-title" id="programTitle">加载中...</div>
+                                <div class="program-time" id="programTime"></div>
+                                <div class="program-desc" id="programDesc"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Channel Logo -->
+                    <div class="channel-logo show" id="channelLogo">CCTV-1</div>
+
+                    <!-- Channel OSD -->
+                    <div class="channel-osd" id="channelOsd">01</div>
+
+                    <!-- Ad Badge -->
+                    <div class="ad-badge" id="adBadge" style="display:none;">广告</div>
+
+                    <!-- Static/Snow -->
+                    <div class="static-overlay" id="staticOverlay">
+                        <canvas class="static-canvas" id="staticCanvas"></canvas>
+                    </div>
+
+                    <!-- Black Screen -->
+                    <div class="black-screen" id="blackScreen"></div>
+
+                    <!-- CRT Effects -->
+                    <div class="crt-overlay">
+                        <div class="scanlines"></div>
+                        <div class="vignette"></div>
+                        <div class="screen-glare"></div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="tv-brand">RETRO TV</div>
+            <div class="tv-knobs">
+                <div class="knob" title="频道-" onclick="prevChannel()"></div>
+                <div class="knob" title="频道+" onclick="nextChannel()"></div>
+            </div>
+        </div>
+
+        <!-- Channel Panel -->
+        <div class="channel-panel">
+            <div class="clock-display" id="clockDisplay">--:--:--</div>
+            <div class="panel-title">频 道 列 表</div>
+            <ul class="channel-list" id="channelList"></ul>
+            <div class="schedule-section">
+                <div class="schedule-title">▶ 当前频道节目单</div>
+                <div id="scheduleList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ========================================
+    // RetroTV Simulator - Core Engine
+    // ========================================
+
+    // === Channel & Schedule Data ===
+    const CHANNELS = [
+        {
+            id: 1,
+            name: 'CCTV-1 综合',
+            logo: 'CCTV-1',
+            color: '#cc0000',
+            schedule: generateSchedule('cctv1')
+        },
+        {
+            id: 2,
+            name: 'CCTV-3 综艺',
+            logo: 'CCTV-3',
+            color: '#ff6600',
+            schedule: generateSchedule('cctv3')
+        },
+        {
+            id: 3,
+            name: 'CCTV-6 电影',
+            logo: 'CCTV-6',
+            color: '#0066cc',
+            schedule: generateSchedule('cctv6')
+        },
+        {
+            id: 4,
+            name: 'CCTV-5 体育',
+            logo: 'CCTV-5',
+            color: '#009933',
+            schedule: generateSchedule('cctv5')
+        },
+        {
+            id: 5,
+            name: '地方卫视',
+            logo: '卫视',
+            color: '#9933cc',
+            schedule: generateSchedule('local')
+        }
+    ];
+
+    // Program templates for different channels
+    const PROGRAM_TEMPLATES = {
+        cctv1: [
+            { name: '新闻联播', duration: 30, type: 'program', genre: 'news' },
+            { name: '焦点访谈', duration: 30, type: 'program', genre: 'news' },
+            { name: '天气预报', duration: 10, type: 'program', genre: 'weather' },
+            { name: '今日说法', duration: 30, type: 'program', genre: 'law' },
+            { name: '动物世界', duration: 45, type: 'program', genre: 'nature' },
+            { name: '综合剧场', duration: 45, type: 'program', genre: 'drama' },
+            { name: '晚间新闻', duration: 30, type: 'program', genre: 'news' },
+            { name: '人与自然', duration: 30, type: 'program', genre: 'nature' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+            { name: '纪录片时间', duration: 50, type: 'program', genre: 'documentary' },
+            { name: '经典老片', duration: 60, type: 'program', genre: 'movie' },
+        ],
+        cctv3: [
+            { name: '星光大道', duration: 60, type: 'program', genre: 'variety' },
+            { name: '非常6+1', duration: 45, type: 'program', genre: 'variety' },
+            { name: '开心辞典', duration: 40, type: 'program', genre: 'game' },
+            { name: '曲苑杂坛', duration: 30, type: 'program', genre: 'comedy' },
+            { name: '综艺大观', duration: 50, type: 'program', genre: 'variety' },
+            { name: '幸运52', duration: 45, type: 'program', genre: 'game' },
+            { name: '同一首歌', duration: 60, type: 'program', genre: 'music' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+            { name: '欢乐中国行', duration: 50, type: 'program', genre: 'variety' },
+            { name: '音乐风云榜', duration: 30, type: 'program', genre: 'music' },
+        ],
+        cctv6: [
+            { name: '佳片有约', duration: 90, type: 'program', genre: 'movie' },
+            { name: '中国电影报道', duration: 20, type: 'program', genre: 'news' },
+            { name: '经典回顾', duration: 90, type: 'program', genre: 'movie' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+            { name: '动作片场', duration: 90, type: 'program', genre: 'movie' },
+            { name: '爱情故事', duration: 90, type: 'program', genre: 'movie' },
+            { name: '光影星播客', duration: 20, type: 'program', genre: 'talk' },
+            { name: '午夜电影', duration: 90, type: 'program', genre: 'movie' },
+        ],
+        cctv5: [
+            { name: '体育新闻', duration: 30, type: 'program', genre: 'news' },
+            { name: '天下足球', duration: 60, type: 'program', genre: 'sports' },
+            { name: 'NBA精彩赛事', duration: 90, type: 'program', genre: 'sports' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+            { name: '乒乓球赛', duration: 60, type: 'program', genre: 'sports' },
+            { name: '武林风', duration: 45, type: 'program', genre: 'sports' },
+            { name: '体育世界', duration: 30, type: 'program', genre: 'sports' },
+            { name: '赛事集锦', duration: 45, type: 'program', genre: 'sports' },
+            { name: '健身动起来', duration: 20, type: 'program', genre: 'fitness' },
+        ],
+        local: [
+            { name: '本地新闻', duration: 30, type: 'program', genre: 'news' },
+            { name: '家有妙招', duration: 30, type: 'program', genre: 'lifestyle' },
+            { name: '电视剧连播', duration: 45, type: 'program', genre: 'drama' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+            { name: '生活帮', duration: 30, type: 'program', genre: 'lifestyle' },
+            { name: '方言剧场', duration: 40, type: 'program', genre: 'drama' },
+            { name: '美食天下', duration: 25, type: 'program', genre: 'food' },
+            { name: '晚间剧场', duration: 45, type: 'program', genre: 'drama' },
+            { name: '夜市人生', duration: 40, type: 'program', genre: 'drama' },
+            { name: '广告时段', duration: 5, type: 'ad', genre: 'ad' },
+        ]
+    };
+
+    // Generate a full weekly schedule for a channel
+    function generateSchedule(channelType) {
+        const templates = PROGRAM_TEMPLATES[channelType];
+        const weekSchedule = [];
+
+        for (let day = 0; day < 7; day++) {
+            const daySchedule = [];
+            let currentMinute = 360; // Start at 06:00
+
+            // Fill from 06:00 to next day 02:00 (20 hours)
+            while (currentMinute < 1560) {
+                // Pick program with some day-based variation
+                const templateIndex = (daySchedule.length + day * 3) % templates.length;
+                const template = templates[templateIndex];
+
+                const startHour = Math.floor(currentMinute / 60);
+                const startMin = currentMinute % 60;
+
+                daySchedule.push({
+                    startTime: `${String(startHour).padStart(2, '0')}:${String(startMin).padStart(2, '0')}`,
+                    startMinute: currentMinute,
+                    duration: template.duration,
+                    name: template.name,
+                    type: template.type,
+                    genre: template.genre,
+                    // Add episode info for variety
+                    episode: template.type === 'program' ? `第${(day * 3 + daySchedule.length) % 20 + 1}期` : null
+                });
+
+                currentMinute += template.duration;
+            }
+
+            // Fill early morning (02:00 - 06:00) with test pattern / off-air
+            daySchedule.unshift({
+                startTime: '00:00',
+                startMinute: 0,
+                duration: 360,
+                name: '测试信号/停机维护',
+                type: 'off-air',
+                genre: 'test'
+            });
+
+            weekSchedule.push(daySchedule);
+        }
+
+        return weekSchedule;
+    }
+
+    // === State ===
+    let currentChannelIndex = 0;
+    let isTransitioning = false;
+    let staticAnimFrame = null;
+    let bgAnimFrame = null;
+    let progressInterval = null;
+    let osdTimeout = null;
+    let programCheckInterval = null;
+    let currentProgramIndex = -1;
+
+    // === DOM Elements ===
+    const programDisplay = document.getElementById('programDisplay');
+    const programCard = document.getElementById('programCard');
+    const programTitle = document.getElementById('programTitle');
+    const programTime = document.getElementById('programTime');
+    const programDesc = document.getElementById('programDesc');
+    const channelLogo = document.getElementById('channelLogo');
+    const channelOsd = document.getElementById('channelOsd');
+    const adBadge = document.getElementById('adBadge');
+    const staticOverlay = document.getElementById('staticOverlay');
+    const staticCanvas = document.getElementById('staticCanvas');
+    const blackScreen = document.getElementById('blackScreen');
+    const progressFill = document.getElementById('progressFill');
+    const channelList = document.getElementById('channelList');
+    const scheduleList = document.getElementById('scheduleList');
+    const clockDisplay = document.getElementById('clockDisplay');
+    const bgCanvas = document.getElementById('bgCanvas');
+
+    // === Time Utilities ===
+    function getCurrentDayOfWeek() {
+        return new Date().getDay(); // 0=Sunday
+    }
+
+    function getCurrentMinuteOfDay() {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
+    }
+
+    function getCurrentSecondOfDay() {
+        const now = new Date();
+        return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString('zh-CN', { hour12: false });
+    }
+
+    function getDayName(day) {
+        const names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        return names[day];
+    }
+
+    // === Schedule Logic ===
+    function getCurrentProgram(channel) {
+        const dayOfWeek = getCurrentDayOfWeek();
+        const minuteOfDay = getCurrentMinuteOfDay();
+        const daySchedule = channel.schedule[dayOfWeek];
+
+        for (let i = daySchedule.length - 1; i >= 0; i--) {
+            if (minuteOfDay >= daySchedule[i].startMinute) {
+                return { program: daySchedule[i], index: i };
+            }
+        }
+        return { program: daySchedule[0], index: 0 };
+    }
+
+    function getNextProgram(channel) {
+        const dayOfWeek = getCurrentDayOfWeek();
+        const minuteOfDay = getCurrentMinuteOfDay();
+        const daySchedule = channel.schedule[dayOfWeek];
+
+        for (let i = 0; i < daySchedule.length; i++) {
+            if (daySchedule[i].startMinute > minuteOfDay) {
+                return daySchedule[i];
+            }
+        }
+        // Wrap to next day
+        const nextDay = (dayOfWeek + 1) % 7;
+        return channel.schedule[nextDay][0];
+    }
+
+    function getProgramProgress(program) {
+        const currentSecond = getCurrentSecondOfDay();
+        const programStartSecond = program.startMinute * 60;
+        const programDurationSeconds = program.duration * 60;
+        const elapsed = currentSecond - programStartSecond;
+        return Math.max(0, Math.min(1, elapsed / programDurationSeconds));
+    }
+
+    function getUpcomingPrograms(channel, count) {
+        const dayOfWeek = getCurrentDayOfWeek();
+        const minuteOfDay = getCurrentMinuteOfDay();
+        const daySchedule = channel.schedule[dayOfWeek];
+        const results = [];
+
+        let foundCurrent = false;
+        for (let i = 0; i < daySchedule.length && results.length < count; i++) {
+            if (daySchedule[i].startMinute >= minuteOfDay - daySchedule[i].duration && !foundCurrent) {
+                foundCurrent = true;
+            }
+            if (foundCurrent) {
+                results.push(daySchedule[i]);
+            }
+        }
+        return results;
+    }
+
+    // === Rendering ===
+    function renderChannelList() {
+        channelList.innerHTML = '';
+        CHANNELS.forEach((ch, idx) => {
+            const { program } = getCurrentProgram(ch);
+            const li = document.createElement('li');
+            li.className = `channel-item${idx === currentChannelIndex ? ' active' : ''}`;
+            li.innerHTML = `
+                <div class="channel-num">${String(ch.id).padStart(2, '0')}</div>
+                <div class="channel-info">
+                    <div class="channel-name">${ch.name}</div>
+                    <div class="channel-now-playing">正在播放: ${program.name}</div>
+                </div>
+            `;
+            li.onclick = () => switchChannel(idx);
+            channelList.appendChild(li);
+        });
+    }
+
+    function renderSchedule() {
+        const channel = CHANNELS[currentChannelIndex];
+        const programs = getUpcomingPrograms(channel, 6);
+        const minuteOfDay = getCurrentMinuteOfDay();
+
+        scheduleList.innerHTML = '';
+        programs.forEach(prog => {
+            const isCurrent = minuteOfDay >= prog.startMinute &&
+                minuteOfDay < prog.startMinute + prog.duration;
+            const div = document.createElement('div');
+            div.className = `schedule-item${isCurrent ? ' current' : ''}${prog.type === 'ad' ? ' ad-slot' : ''}`;
+            div.innerHTML = `
+                <span class="schedule-time">${prog.startTime}</span>
+                <span class="schedule-name">${prog.name}${prog.type === 'ad' ? ' [广告位]' : ''}</span>
+            `;
+            scheduleList.appendChild(div);
+        });
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const timeStr = formatTime(now);
+        const dayStr = getDayName(now.getDay());
+        clockDisplay.textContent = `${dayStr} ${timeStr}`;
+    }
+
+    // === Background Animation (simulates video content) ===
+    function startBgAnimation(genre, color) {
+        const ctx = bgCanvas.getContext('2d');
+        bgCanvas.width = 640;
+        bgCanvas.height = 480;
+
+        if (bgAnimFrame) cancelAnimationFrame(bgAnimFrame);
+
+        const animations = {
+            news: drawNewsAnimation,
+            weather: drawWeatherAnimation,
+            nature: drawNatureAnimation,
+            movie: drawMovieAnimation,
+            sports: drawSportsAnimation,
+            variety: drawVarietyAnimation,
+            music: drawMusicAnimation,
+            drama: drawDramaAnimation,
+            game: drawGameAnimation,
+            comedy: drawComedyAnimation,
+            documentary: drawDocumentaryAnimation,
+            talk: drawTalkAnimation,
+            lifestyle: drawLifestyleAnimation,
+            food: drawFoodAnimation,
+            fitness: drawFitnessAnimation,
+            law: drawLawAnimation,
+            test: drawTestPattern,
+            ad: drawAdAnimation
+        };
+
+        const drawFn = animations[genre] || drawDefaultAnimation;
+        let frame = 0;
+
+        function animate() {
+            drawFn(ctx, frame, color);
+            frame++;
+            bgAnimFrame = requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // Animation generators for different genres
+    function drawNewsAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#1a237e';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Scrolling ticker
+        ctx.fillStyle = '#c62828';
+        ctx.fillRect(0, 420, 640, 60);
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px Courier New';
+        const ticker = '最新消息 >>> 国内外要闻持续更新中... 经济数据发布... 科技动态... ';
+        const offset = (frame * 2) % (ticker.length * 12);
+        ctx.fillText(ticker + ticker, 640 - offset, 455);
+
+        // World map silhouette
+        ctx.strokeStyle = 'rgba(100, 180, 255, 0.3)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 10; i++) {
+            ctx.beginPath();
+            ctx.arc(320 + Math.sin(frame * 0.01 + i) * 50, 200, 80 + i * 10, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+
+    function drawWeatherAnimation(ctx, frame, color) {
+        // Sky gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, 480);
+        grad.addColorStop(0, '#0277bd');
+        grad.addColorStop(1, '#81d4fa');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Clouds
+        ctx.fillStyle = 'rgba(255,255,255,0.8)';
+        for (let i = 0; i < 5; i++) {
+            const x = ((frame * 0.5 + i * 150) % 800) - 80;
+            const y = 80 + i * 40;
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);
+            ctx.arc(x + 25, y - 10, 25, 0, Math.PI * 2);
+            ctx.arc(x + 50, y, 30, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Temperature
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 60px Courier New';
+        ctx.fillText('26°C', 250, 300);
+    }
+
+    function drawNatureAnimation(ctx, frame, color) {
+        // Forest scene
+        const grad = ctx.createLinearGradient(0, 0, 0, 480);
+        grad.addColorStop(0, '#1b5e20');
+        grad.addColorStop(0.6, '#2e7d32');
+        grad.addColorStop(1, '#4e342e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Trees
+        for (let i = 0; i < 8; i++) {
+            const x = i * 85 + 20;
+            const sway = Math.sin(frame * 0.02 + i) * 3;
+            ctx.fillStyle = '#33691e';
+            ctx.beginPath();
+            ctx.moveTo(x + sway, 200 - i * 10);
+            ctx.lineTo(x - 30 + sway, 400);
+            ctx.lineTo(x + 30 + sway, 400);
+            ctx.fill();
+        }
+
+        // Bird
+        const bx = (frame * 1.5) % 700;
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bx, 100 + Math.sin(frame * 0.05) * 20, 8, 0, Math.PI, true);
+        ctx.stroke();
+    }
+
+    function drawMovieAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#0d0d0d';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Letterbox bars
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 640, 60);
+        ctx.fillRect(0, 420, 640, 60);
+
+        // Film grain
+        for (let i = 0; i < 200; i++) {
+            const x = Math.random() * 640;
+            const y = Math.random() * 480;
+            const brightness = Math.random() * 30;
+            ctx.fillStyle = `rgba(${brightness},${brightness},${brightness},0.3)`;
+            ctx.fillRect(x, y, 2, 2);
+        }
+
+        // Spotlight
+        const grd = ctx.createRadialGradient(
+            320 + Math.sin(frame * 0.01) * 100, 240, 10,
+            320, 240, 250
+        );
+        grd.addColorStop(0, 'rgba(80, 60, 30, 0.4)');
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 640, 480);
+    }
+
+    function drawSportsAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#1b5e20';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Field lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(50, 50, 540, 380);
+        ctx.beginPath();
+        ctx.moveTo(320, 50);
+        ctx.lineTo(320, 430);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(320, 240, 60, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Ball
+        const bx = 320 + Math.cos(frame * 0.03) * 150;
+        const by = 240 + Math.sin(frame * 0.05) * 100;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(bx, by, 8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawVarietyAnimation(ctx, frame, color) {
+        // Stage with lights
+        ctx.fillStyle = '#1a0033';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Disco lights
+        for (let i = 0; i < 6; i++) {
+            const angle = (frame * 0.02) + (i * Math.PI / 3);
+            const x = 320 + Math.cos(angle) * 200;
+            const y = 240 + Math.sin(angle) * 100;
+            const hue = (frame * 2 + i * 60) % 360;
+            const grd = ctx.createRadialGradient(x, y, 0, x, y, 80);
+            grd.addColorStop(0, `hsla(${hue}, 100%, 50%, 0.4)`);
+            grd.addColorStop(1, 'transparent');
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, 640, 480);
+        }
+
+        // Stage floor
+        ctx.fillStyle = 'rgba(50, 0, 80, 0.5)';
+        ctx.fillRect(0, 350, 640, 130);
+    }
+
+    function drawMusicAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#1a0033';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Equalizer bars
+        for (let i = 0; i < 32; i++) {
+            const height = (Math.sin(frame * 0.1 + i * 0.5) + 1) * 100 + 20;
+            const hue = (i * 10 + frame) % 360;
+            ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+            ctx.fillRect(i * 20 + 5, 480 - height, 15, height);
+        }
+    }
+
+    function drawDramaAnimation(ctx, frame, color) {
+        const grad = ctx.createLinearGradient(0, 0, 0, 480);
+        grad.addColorStop(0, '#2c1810');
+        grad.addColorStop(1, '#1a0f0a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Warm interior light
+        const grd = ctx.createRadialGradient(320, 200, 20, 320, 250, 300);
+        grd.addColorStop(0, 'rgba(255, 200, 100, 0.2)');
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Subtle breathing effect
+        const alpha = 0.05 + Math.sin(frame * 0.02) * 0.02;
+        ctx.fillStyle = `rgba(255, 180, 80, ${alpha})`;
+        ctx.fillRect(0, 0, 640, 480);
+    }
+
+    function drawGameAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#000066';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Spinning wheel
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + frame * 0.02;
+            ctx.fillStyle = i % 2 === 0 ? '#ff0066' : '#ffcc00';
+            ctx.beginPath();
+            ctx.moveTo(320, 240);
+            ctx.arc(320, 240, 150, angle, angle + Math.PI / 4);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(320, 240, 30, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawComedyAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#330000';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Curtain
+        for (let i = 0; i < 10; i++) {
+            const x = i * 70;
+            const wave = Math.sin(frame * 0.03 + i * 0.5) * 10;
+            ctx.fillStyle = i % 2 === 0 ? '#8b0000' : '#a00000';
+            ctx.fillRect(x + wave, 0, 65, 480);
+        }
+
+        // Spotlight
+        const grd = ctx.createRadialGradient(320, 350, 10, 320, 300, 200);
+        grd.addColorStop(0, 'rgba(255, 255, 200, 0.3)');
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 640, 480);
+    }
+
+    function drawDocumentaryAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Old film effect
+        ctx.fillStyle = `rgba(139, 119, 80, ${0.1 + Math.random() * 0.05})`;
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Floating particles (dust)
+        ctx.fillStyle = 'rgba(200, 180, 140, 0.5)';
+        for (let i = 0; i < 20; i++) {
+            const x = (i * 67 + frame * 0.3) % 640;
+            const y = (i * 43 + frame * 0.5) % 480;
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function drawTalkAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#1a1a3e';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Two chairs silhouette
+        ctx.fillStyle = '#2a2a4e';
+        ctx.fillRect(150, 300, 100, 150);
+        ctx.fillRect(390, 300, 100, 150);
+
+        // Ambient light
+        const grd = ctx.createRadialGradient(320, 200, 50, 320, 250, 300);
+        grd.addColorStop(0, 'rgba(100, 100, 200, 0.1)');
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 640, 480);
+    }
+
+    function drawLifestyleAnimation(ctx, frame, color) {
+        const grad = ctx.createLinearGradient(0, 0, 0, 480);
+        grad.addColorStop(0, '#fff8e1');
+        grad.addColorStop(1, '#ffe0b2');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Decorative circles
+        for (let i = 0; i < 5; i++) {
+            ctx.strokeStyle = `rgba(255, 120, 0, ${0.2 - i * 0.03})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(320, 240, 50 + i * 40 + Math.sin(frame * 0.02) * 10, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+
+    function drawFoodAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Steam effect
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            let y = 400 - (frame * 0.5 + i * 50) % 300;
+            ctx.moveTo(280 + i * 40, 400);
+            ctx.quadraticCurveTo(
+                290 + i * 40 + Math.sin(frame * 0.05 + i) * 20, y + 50,
+                280 + i * 40 + Math.sin(frame * 0.03 + i) * 10, y
+            );
+            ctx.stroke();
+        }
+
+        // Plate
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.ellipse(320, 380, 100, 30, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawFitnessAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#263238';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Pulse/heartbeat line
+        ctx.strokeStyle = '#00e676';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let x = 0; x < 640; x += 2) {
+            const phase = (x + frame * 3) * 0.02;
+            let y = 240;
+            if (Math.floor(phase) % 4 === 0) {
+                y += Math.sin(phase * 10) * 80;
+            }
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    function drawLawAnimation(ctx, frame, color) {
+        ctx.fillStyle = '#1a237e';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Scale of justice
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 3;
+        const sway = Math.sin(frame * 0.02) * 10;
+        // Pillar
+        ctx.beginPath();
+        ctx.moveTo(320, 150);
+        ctx.lineTo(320, 400);
+        ctx.stroke();
+        // Beam
+        ctx.beginPath();
+        ctx.moveTo(220, 200 + sway);
+        ctx.lineTo(420, 200 - sway);
+        ctx.stroke();
+        // Pans
+        ctx.beginPath();
+        ctx.arc(220, 240 + sway, 30, 0, Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(420, 240 - sway, 30, 0, Math.PI);
+        ctx.stroke();
+    }
+
+    function drawTestPattern(ctx, frame) {
+        // Classic TV test pattern
+        const colors = ['#fff', '#ff0', '#0ff', '#0f0', '#f0f', '#f00', '#00f', '#000'];
+        const barWidth = 640 / colors.length;
+        colors.forEach((color, i) => {
+            ctx.fillStyle = color;
+            ctx.fillRect(i * barWidth, 0, barWidth, 360);
+        });
+
+        // Bottom section
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 360, 640, 120);
+        ctx.fillStyle = '#fff';
+        ctx.font = '16px Courier New';
+        ctx.fillText('测试信号 - 暂停播出', 230, 420);
+
+        // Flashing dot
+        if (Math.floor(frame / 30) % 2 === 0) {
+            ctx.fillStyle = '#f00';
+            ctx.beginPath();
+            ctx.arc(320, 450, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function drawAdAnimation(ctx, frame, color) {
+        // Colorful ad placeholder
+        const hue = (frame * 2) % 360;
+        ctx.fillStyle = `hsl(${hue}, 60%, 20%)`;
+        ctx.fillRect(0, 0, 640, 480);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 36px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('广告时间', 320, 220);
+        ctx.font = '18px Courier New';
+        ctx.fillText('[ 广告位占位 - 可替换 ]', 320, 270);
+        ctx.textAlign = 'left';
+
+        // Animated border
+        ctx.strokeStyle = `hsl(${(hue + 180) % 360}, 80%, 50%)`;
+        ctx.lineWidth = 4;
+        ctx.setLineDash([10, 10]);
+        ctx.lineDashOffset = -frame * 0.5;
+        ctx.strokeRect(30, 30, 580, 420);
+        ctx.setLineDash([]);
+    }
+
+    function drawDefaultAnimation(ctx, frame, color) {
+        ctx.fillStyle = color || '#333';
+        ctx.fillRect(0, 0, 640, 480);
+
+        // Gentle wave
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            for (let x = 0; x < 640; x += 5) {
+                const y = 240 + Math.sin(x * 0.01 + frame * 0.02 + i) * (30 + i * 20);
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    // === Static/Snow Effect ===
+    function startStatic() {
+        const ctx = staticCanvas.getContext('2d');
+        staticCanvas.width = 320;
+        staticCanvas.height = 240;
+
+        function drawStatic() {
+            const imageData = ctx.createImageData(320, 240);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const v = Math.random() * 255;
+                data[i] = v;
+                data[i + 1] = v;
+                data[i + 2] = v;
+                data[i + 3] = 255;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            staticAnimFrame = requestAnimationFrame(drawStatic);
+        }
+        drawStatic();
+    }
+
+    function stopStatic() {
+        if (staticAnimFrame) {
+            cancelAnimationFrame(staticAnimFrame);
+            staticAnimFrame = null;
+        }
+    }
+
+    // === Channel Switching ===
+    function switchChannel(index) {
+        if (index === currentChannelIndex || isTransitioning) return;
+        isTransitioning = true;
+
+        const delay = 300 + Math.random() * 500; // 300-800ms random delay
+
+        // Phase 1: Black screen
+        blackScreen.classList.add('active');
+
+        setTimeout(() => {
+            // Phase 2: Static/snow
+            blackScreen.classList.remove('active');
+            staticOverlay.classList.add('active');
+            startStatic();
+
+            // Play static sound effect (visual only for now)
+            showChannelOsd(CHANNELS[index].id);
+
+            setTimeout(() => {
+                // Phase 3: Switch to new channel
+                staticOverlay.classList.remove('active');
+                stopStatic();
+                currentChannelIndex = index;
+                currentProgramIndex = -1;
+                updateDisplay();
+                renderChannelList();
+                renderSchedule();
+                isTransitioning = false;
+            }, delay);
+        }, 150);
+    }
+
+    function nextChannel() {
+        const next = (currentChannelIndex + 1) % CHANNELS.length;
+        switchChannel(next);
+    }
+
+    function prevChannel() {
+        const prev = (currentChannelIndex - 1 + CHANNELS.length) % CHANNELS.length;
+        switchChannel(prev);
+    }
+
+    function showChannelOsd(channelId) {
+        channelOsd.textContent = String(channelId).padStart(2, '0');
+        channelOsd.classList.add('visible');
+        if (osdTimeout) clearTimeout(osdTimeout);
+        osdTimeout = setTimeout(() => {
+            channelOsd.classList.remove('visible');
+        }, 3000);
+    }
+
+    // === Main Display Update ===
+    function updateDisplay() {
+        const channel = CHANNELS[currentChannelIndex];
+        const { program, index } = getCurrentProgram(channel);
+
+        // Update channel logo
+        channelLogo.textContent = channel.logo;
+
+        // Check if program changed (for continuous playback)
+        if (index !== currentProgramIndex) {
+            currentProgramIndex = index;
+            onProgramChange(program, channel);
+        }
+
+        // Update progress
+        const progress = getProgramProgress(program);
+        progressFill.style.width = `${progress * 100}%`;
+
+        // Update program info
+        programTitle.textContent = program.name;
+        programTime.textContent = `${program.startTime} - ${addMinutes(program.startTime, program.duration)}`;
+        if (program.episode) {
+            programDesc.textContent = program.episode;
+        } else if (program.type === 'ad') {
+            programDesc.textContent = '广告占位 - 可插入商业内容';
+        } else if (program.type === 'off-air') {
+            programDesc.textContent = '频道暂停播出';
+        } else {
+            programDesc.textContent = '';
+        }
+
+        // Ad badge
+        adBadge.style.display = program.type === 'ad' ? 'block' : 'none';
+
+        // Background animation
+        startBgAnimation(program.genre, channel.color);
+    }
+
+    function onProgramChange(program, channel) {
+        // Brief transition effect between programs
+        if (currentProgramIndex > 0) {
+            blackScreen.classList.add('active');
+            setTimeout(() => {
+                blackScreen.classList.remove('active');
+            }, 200);
+        }
+    }
+
+    function addMinutes(timeStr, minutes) {
+        const [h, m] = timeStr.split(':').map(Number);
+        const total = h * 60 + m + minutes;
+        const newH = Math.floor(total / 60) % 24;
+        const newM = total % 60;
+        return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    }
+
+    // === Keyboard Controls ===
+    document.addEventListener('keydown', (e) => {
+        switch (e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                prevChannel();
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                nextChannel();
+                break;
+            case '1': case '2': case '3': case '4': case '5':
+                const idx = parseInt(e.key) - 1;
+                if (idx < CHANNELS.length) switchChannel(idx);
+                break;
+        }
+    });
+
+    // === Initialization ===
+    function init() {
+        renderChannelList();
+        renderSchedule();
+        updateDisplay();
+        updateClock();
+
+        // Update every second
+        setInterval(() => {
+            updateClock();
+            updateDisplay();
+            // Re-render schedule every 30 seconds
+        }, 1000);
+
+        setInterval(() => {
+            renderSchedule();
+            renderChannelList();
+        }, 30000);
+
+        startStatic();
+        setTimeout(() => {
+            staticOverlay.classList.remove('active');
+            stopStatic();
+        }, 0);
+    }
+
+    init();
+    </script>
+</body>
+</html>
