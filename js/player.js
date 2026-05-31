@@ -9,6 +9,8 @@ const Player = (function() {
     let videoFallbackActive = false;
     let adTimer = null;
     let adSlotEndTimer = null;
+    let pendingAdDuration = 0;
+    let adPlayingHandler = null;
 
     const preloadPool = new Map();
     const MAX_PRELOAD = RetroTVConfig.video.preloadMax;
@@ -27,6 +29,11 @@ const Player = (function() {
     function clearAdTimers() {
         if (adTimer) { clearTimeout(adTimer); adTimer = null; }
         if (adSlotEndTimer) { clearTimeout(adSlotEndTimer); adSlotEndTimer = null; }
+        pendingAdDuration = 0;
+        if (adPlayingHandler) {
+            videoPlayer.removeEventListener('playing', adPlayingHandler);
+            adPlayingHandler = null;
+        }
     }
 
     function playProgram(program, channel) {
@@ -51,10 +58,9 @@ const Player = (function() {
                 program._adQueue = ads;
                 program._adIndex = 0;
                 program._adSlotDuration = slotDuration * 60;
-                program._adSlotStart = Date.now();
+                program._adSlotStart = null;
                 EffectsEngine.showAdInfo(ads[0].name, 0, ads.length);
-                startAdTimer(ads[0].duration);
-                startSlotEndTimer(slotDuration * 60);
+                scheduleAdTimerOnPlay(ads[0].duration);
             } else {
                 endAdSlot();
                 return;
@@ -112,6 +118,25 @@ const Player = (function() {
         }
     }
 
+    function scheduleAdTimerOnPlay(adDurationSeconds) {
+        // Remove any prior listener
+        if (adPlayingHandler) {
+            videoPlayer.removeEventListener('playing', adPlayingHandler);
+        }
+        pendingAdDuration = adDurationSeconds;
+        adPlayingHandler = function onPlaying() {
+            videoPlayer.removeEventListener('playing', adPlayingHandler);
+            adPlayingHandler = null;
+            // Mark slot start on first ad's actual playback
+            if (currentProgram && currentProgram._adSlotStart === null) {
+                currentProgram._adSlotStart = Date.now();
+                startSlotEndTimer(currentProgram._adSlotDuration);
+            }
+            startAdTimer(pendingAdDuration);
+        };
+        videoPlayer.addEventListener('playing', adPlayingHandler);
+    }
+
     function startAdTimer(adDurationSeconds) {
         if (adTimer) clearTimeout(adTimer);
         adTimer = setTimeout(() => {
@@ -165,14 +190,14 @@ const Player = (function() {
                 videoPlayer.play().catch(() => advanceAdOrEnd());
                 EffectsEngine.showAdInfo(nextAd.name, currentProgram._adIndex, currentProgram._adQueue.length);
                 videoPlayer.style.opacity = '1';
-                startAdTimer(actualDuration);
+                scheduleAdTimerOnPlay(actualDuration);
             }, RetroTVConfig.ads.transitionDuration);
         } else {
             videoPlayer.src = nextAd.videoUrl;
             videoPlayer.currentTime = 0;
             videoPlayer.play().catch(() => advanceAdOrEnd());
             EffectsEngine.showAdInfo(nextAd.name, currentProgram._adIndex, currentProgram._adQueue.length);
-            startAdTimer(actualDuration);
+            scheduleAdTimerOnPlay(actualDuration);
         }
     }
 
@@ -206,12 +231,14 @@ const Player = (function() {
 
     function onVideoEnded() {
         if (currentProgram && currentProgram._adQueue) {
-            // Video ended before timer - ad video was shorter than configured duration.
-            // Timer will handle the advance, do nothing here.
-            // But if timer already cleared (shouldn't happen), advance.
-            if (!adTimer) {
-                advanceAdOrEnd();
+            // Ad video ended before its configured duration elapsed.
+            // Don't wait on the ended frame — clear timer and advance now.
+            if (adTimer) { clearTimeout(adTimer); adTimer = null; }
+            if (adPlayingHandler) {
+                videoPlayer.removeEventListener('playing', adPlayingHandler);
+                adPlayingHandler = null;
             }
+            advanceAdOrEnd();
             return;
         }
 
